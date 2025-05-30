@@ -1,0 +1,297 @@
+#!/usr/bin/env python3
+# scripts/content_generator.py - Bulletproof version with extensive error handling
+
+import os
+import sys
+import time
+import json
+from datetime import datetime
+
+# Check Python version first
+if sys.version_info < (3, 7):
+    print("❌ Python 3.7+ required")
+    sys.exit(1)
+
+print("🚀 Starting bulletproof content generator...")
+
+# Import with error handling
+try:
+    import feedparser
+    print("✅ feedparser imported")
+except ImportError:
+    print("❌ feedparser not found. Install with: pip install feedparser")
+    sys.exit(1)
+
+try:
+    import requests
+    print("✅ requests imported")
+except ImportError:
+    print("❌ requests not found. Install with: pip install requests")
+    sys.exit(1)
+
+try:
+    from bs4 import BeautifulSoup
+    print("✅ BeautifulSoup imported")
+except ImportError:
+    print("❌ beautifulsoup4 not found. Install with: pip install beautifulsoup4")
+    sys.exit(1)
+
+try:
+    from anthropic import Anthropic
+    print("✅ anthropic imported")
+except ImportError:
+    print("❌ anthropic not found. Install with: pip install anthropic")
+    sys.exit(1)
+
+# Configuration
+RSS_FEEDS = [
+    "https://blockclubchicago.org/feed/",
+    "https://feeds.feedburner.com/chicagoist/chicagoist",
+]
+
+KEYWORDS = ['police', 'housing', 'school', 'community', 'mayor', 'budget']
+
+def check_environment():
+    """Check if environment is properly set up"""
+    print("\n🔍 Checking environment...")
+    
+    # Check API key
+    api_key = os.environ.get('CLAUDE_API_KEY')
+    if not api_key:
+        print("❌ CLAUDE_API_KEY environment variable not set")
+        print("   Set it with: export CLAUDE_API_KEY='your_key_here'")
+        return False
+    
+    print(f"✅ API key found (starts with: {api_key[:10]}...)")
+    
+    # Test API connection
+    try:
+        client = Anthropic(api_key=api_key)
+        # Simple test call
+        response = client.messages.create(
+            model="claude-3-5-haiku-20241022",
+            max_tokens=50,
+            messages=[{"role": "user", "content": "Test"}]
+        )
+        print("✅ API connection successful")
+        return client
+    except Exception as e:
+        print(f"❌ API test failed: {str(e)}")
+        return False
+
+def safe_fetch_feed(feed_url, timeout=10):
+    """Safely fetch RSS feed with error handling"""
+    try:
+        print(f"📡 Fetching: {feed_url}")
+        
+        # Set user agent to avoid blocking
+        feedparser.USER_AGENT = "Mozilla/5.0 (compatible; ContentBot/1.0)"
+        
+        # Parse feed with timeout
+        feed = feedparser.parse(feed_url)
+        
+        if not feed.entries:
+            print(f"⚠️  No entries in feed: {feed_url}")
+            return []
+        
+        articles = []
+        for entry in feed.entries[:3]:  # Limit to 3
+            try:
+                article = {
+                    'title': getattr(entry, 'title', 'No Title'),
+                    'content': getattr(entry, 'summary', ''),
+                    'url': getattr(entry, 'link', ''),
+                    'published': getattr(entry, 'published', str(datetime.now())),
+                    'source': feed_url
+                }
+                
+                # Basic validation
+                if article['title'] and article['title'] != 'No Title':
+                    articles.append(article)
+                    
+            except Exception as e:
+                print(f"⚠️  Error parsing entry: {e}")
+                continue
+        
+        print(f"✅ Got {len(articles)} articles from {feed_url}")
+        return articles
+        
+    except Exception as e:
+        print(f"❌ Failed to fetch {feed_url}: {e}")
+        return []
+
+def filter_articles(articles):
+    """Filter articles for relevant content"""
+    relevant = []
+    
+    for article in articles:
+        try:
+            text = (article.get('title', '') + ' ' + article.get('content', '')).lower()
+            
+            if any(keyword in text for keyword in KEYWORDS):
+                relevant.append(article)
+                print(f"✅ Relevant: {article['title'][:50]}...")
+            
+        except Exception as e:
+            print(f"⚠️  Error filtering article: {e}")
+            continue
+    
+    return relevant
+
+def safe_api_call(client, prompt, max_retries=3):
+    """Make API call with extensive error handling"""
+    for attempt in range(max_retries):
+        try:
+            print(f"🤖 API call attempt {attempt + 1}...")
+            
+            response = client.messages.create(
+                model="claude-3-5-haiku-20241022",
+                max_tokens=2000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            
+            content = response.content[0].text
+            print(f"✅ API call successful ({len(content)} characters)")
+            
+            # Rate limiting
+            time.sleep(2)
+            return content
+            
+        except Exception as e:
+            print(f"❌ API call failed (attempt {attempt + 1}): {e}")
+            
+            if attempt < max_retries - 1:
+                wait_time = (attempt + 1) * 5
+                print(f"⏳ Waiting {wait_time} seconds before retry...")
+                time.sleep(wait_time)
+            else:
+                print("❌ All API attempts failed")
+                return None
+
+def create_simple_prompt(article):
+    """Create a simple, reliable prompt"""
+    return f"""
+Analyze this news story using systematic racism analysis:
+
+Title: {article.get('title', 'No title')[:200]}
+Content: {article.get('content', 'No content')[:1000]}
+
+Create a brief analysis (300-500 words) covering:
+
+1. What systematic issue does this represent?
+2. Who has power in this situation?
+3. How are communities affected?
+4. What organizing opportunities exist?
+
+Keep the analysis concrete and actionable.
+"""
+
+def safe_save_content(content, filename):
+    """Safely save content with error handling"""
+    try:
+        # Create directory
+        os.makedirs('content', exist_ok=True)
+        
+        # Clean filename
+        safe_filename = "".join(c for c in filename if c.isalnum() or c in ('-', '_', '.')).strip()
+        filepath = os.path.join('content', safe_filename)
+        
+        # Save with UTF-8 encoding
+        with open(filepath, 'w', encoding='utf-8', errors='replace') as f:
+            f.write(content)
+        
+        print(f"✅ Saved: {filepath}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Failed to save {filename}: {e}")
+        return False
+
+def main():
+    """Main function with comprehensive error handling"""
+    print("=" * 60)
+    print("🎯 DIGNITY LENS CONTENT GENERATOR")
+    print("=" * 60)
+    
+    # Step 1: Check environment
+    client = check_environment()
+    if not client:
+        print("\n❌ Environment check failed. Exiting.")
+        sys.exit(1)
+    
+    # Step 2: Fetch articles
+    print("\n📰 Fetching articles...")
+    all_articles = []
+    
+    for feed_url in RSS_FEEDS:
+        articles = safe_fetch_feed(feed_url)
+        all_articles.extend(articles)
+        time.sleep(1)  # Be nice to servers
+    
+    if not all_articles:
+        print("❌ No articles found. Exiting.")
+        sys.exit(1)
+    
+    print(f"📊 Total articles found: {len(all_articles)}")
+    
+    # Step 3: Filter for relevance
+    print("\n🔍 Filtering for relevant content...")
+    relevant_articles = filter_articles(all_articles)
+    
+    if not relevant_articles:
+        print("⚠️  No relevant articles found.")
+        sys.exit(0)
+    
+    print(f"🎯 Relevant articles: {len(relevant_articles)}")
+    
+    # Step 4: Generate content
+    print("\n🧠 Generating content...")
+    date_str = datetime.now().strftime('%Y%m%d')
+    successful_generations = 0
+    
+    for i, article in enumerate(relevant_articles[:2]):  # Limit to 2 to avoid rate limits
+        print(f"\n--- Processing Article {i+1} ---")
+        print(f"Title: {article['title'][:60]}...")
+        
+        try:
+            # Create prompt
+            prompt = create_simple_prompt(article)
+            
+            # Generate content
+            analysis = safe_api_call(client, prompt)
+            
+            if analysis:
+                # Save content
+                filename = f"{date_str}-analysis-{i+1}.md"
+                if safe_save_content(analysis, filename):
+                    successful_generations += 1
+            
+        except Exception as e:
+            print(f"❌ Error processing article {i+1}: {e}")
+            continue
+    
+    # Step 5: Summary
+    print("\n" + "=" * 60)
+    print("📋 GENERATION SUMMARY")
+    print("=" * 60)
+    print(f"Articles processed: {len(relevant_articles[:2])}")
+    print(f"Successful generations: {successful_generations}")
+    print(f"Content saved to: ./content/")
+    
+    if successful_generations > 0:
+        print("🎉 Success! Check the content directory for generated files.")
+    else:
+        print("⚠️  No content was successfully generated.")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n⚠️  Interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n❌ Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
