@@ -1,4 +1,4 @@
-# scripts/enhanced_content_generator.py
+# scripts/content_generator.py
 import feedparser
 import requests
 from bs4 import BeautifulSoup
