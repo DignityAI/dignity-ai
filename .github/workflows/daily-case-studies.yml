@@ -1,10 +1,16 @@
-# .github/workflows/daily-case-studies.yml
-name: Daily Liberation Technology Content Generation
+name: Generate Dignity AI Content
 
 on:
   schedule:
-    - cron: '0 9 * * *'  # Runs daily at 9 AM UTC
-  workflow_dispatch:  # Allows manual trigger
+    # Run daily at 9 AM UTC (4 AM Central Time)
+    - cron: '0 9 * * *'
+  workflow_dispatch: # Allow manual triggers
+  push:
+    branches: [ main ]
+    paths: 
+      - 'scripts/**'
+      - '.github/workflows/**'
+      - 'requirements.txt'
 
 jobs:
   generate-content:
@@ -12,26 +18,104 @@ jobs:
     
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
-      
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0  # Full history for better commits
+        
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.9'
+        python-version: '3.11'  # Use newer Python version
+        cache: 'pip'  # Cache pip dependencies
+        
+    - name: Create required directories
+      run: |
+        mkdir -p scripts
+        mkdir -p generated_content
         
     - name: Install dependencies
       run: |
-        pip install feedparser requests anthropic python-dateutil
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then
+          pip install -r requirements.txt
+        else
+          pip install anthropic>=0.52.0 requests>=2.32.0 feedparser>=6.0.11 python-dateutil>=2.9.0 beautifulsoup4>=4.12.0
+        fi
+        
+    - name: Verify environment
+      run: |
+        python --version
+        pip list | grep -E "(anthropic|requests|feedparser)"
+        ls -la scripts/
         
     - name: Generate content
       env:
         CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
-      run: python scripts/content_generator.py
+        PYTHONPATH: ${{ github.workspace }}
+      run: |
+        cd ${{ github.workspace }}
+        python scripts/content_generator.py
+      timeout-minutes: 15  # Prevent hanging
       
+    - name: Check generated content
+      run: |
+        echo "Generated content:"
+        ls -la generated_content/ || echo "No content directory found"
+        if [ -d "generated_content" ]; then
+          echo "Content files:"
+          find generated_content -name "*.md" -o -name "*.json" | head -10
+        fi
+        
     - name: Commit new content
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add drafts/
-        git diff --staged --quiet || git commit -m "Daily content generation: $(date '+%Y-%m-%d')"
-        git push
+        git config --local user.email "dignity-ai@defyracismcollective.org"
+        git config --local user.name "Dignity AI Generator"
+        
+        # Add generated content
+        git add generated_content/
+        
+        # Check if there are changes
+        if git diff --staged --quiet; then
+          echo "No new content to commit"
+        else
+          # Create commit with detailed message
+          TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S UTC')
+          FILE_COUNT=$(find generated_content -name "*.md" | wc -l)
+          
+          git commit -m "🤖 Generated Dignity Lens content analysis
+          
+Generated: $TIMESTAMP
+Files: $FILE_COUNT markdown analyses
+Framework: Dignity Lens (Defy Racism Collective)
+
+Automated content generation using systematic racism analysis
+Visit: https://defyracismcollective.org"
+          
+          git push
+          echo "✅ Pushed new content to repository"
+        fi
+        
+    - name: Create issue on failure
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: '🚨 Content Generation Failed',
+            body: `Content generation workflow failed on ${new Date().toISOString()}.
+            
+            **Workflow:** ${context.workflow}
+            **Run ID:** ${context.runId}
+            **Run URL:** ${context.payload.repository.html_url}/actions/runs/${context.runId}
+            
+            Please check the logs and verify:
+            - CLAUDE_API_KEY secret is set correctly
+            - RSS feeds are accessible
+            - Python dependencies are installed
+            
+            Framework: Dignity Lens (Defy Racism Collective)`,
+            labels: ['bug', 'automation']
+          })
