@@ -1,0 +1,61 @@
+name: Daily Content Generation
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # 9 AM UTC daily
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  generate-content:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Generate content
+      env:
+        CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+      run: python scripts/content_generator.py
+    
+    - name: Pull latest changes and commit
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        # Pull latest changes to avoid conflicts
+        git pull origin main --rebase
+        
+        # Add generated files
+        git add drafts/
+        
+        # Only commit if there are changes
+        if ! git diff --staged --quiet; then
+          git commit -m "Daily content generation: $(date +%Y-%m-%d)"
+          
+          # Push with retry logic
+          for i in {1..3}; do
+            if git push origin main; then
+              echo "Successfully pushed on attempt $i"
+              break
+            else
+              echo "Push failed on attempt $i, retrying..."
+              git pull origin main --rebase
+              sleep 5
+            fi
+          done
+        else
+          echo "No changes to commit"
+        fi
