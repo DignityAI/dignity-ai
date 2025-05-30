@@ -1,280 +1,48 @@
-#!/usr/bin/env python3
-"""
-Dignity AI Content Generator
-Automatically generates educational content using the Dignity Lens framework
-"""
+name: Generate Dignity Lens Content
 
-import os
-import json
-import logging
-from datetime import datetime
-from typing import Dict, List, Optional
-import anthropic
+on:
+  workflow_dispatch:  # Manual trigger for testing
+  schedule:
+    - cron: '0 12 * * 1'
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
-
-class DignityLensFramework:
-    """Core framework for analyzing systematic racism through the Dignity Lens"""
+jobs:
+  generate-content:
+    runs-on: ubuntu-latest
     
-    DOMAINS = {
-        "power_structures": {
-            "title": "Power Structures",
-            "question": "Who holds decision-making authority and how is it maintained?",
-            "description": "Government institutions, corporate control, resource allocation, educational systems, media oversight, policy development, community exclusion from decision-making processes"
-        },
-        "control_mechanisms": {
-            "title": "Control Mechanisms", 
-            "question": "How are Black communities contained and suppressed?",
-            "description": "Policing and surveillance systems, legal system manipulation, economic exclusion and exploitation, geographic containment, cultural suppression and narrative control"
-        },
-        "community_resistance": {
-            "title": "Community Resistance",
-            "question": "How do Black communities survive and fight back?", 
-            "description": "Organizing strategies and movement building tactics, mutual aid and community care systems, cultural preservation and innovation as resistance"
-        },
-        "liberation_strategies": {
-            "title": "Liberation Strategies",
-            "question": "What has actually worked to build Black freedom and power?",
-            "description": "Successful organizing innovations across eras, institution-building and alternative system creation, coalition-building and sustainable organizing approaches"
-        }
-    }
-    
-    HISTORICAL_ERAS = {
-        "era1": {
-            "title": "Enslavement & Early Resistance",
-            "period": "1600s–1865",
-            "description": "Foundation period of systematic oppression and community survival, patterns established: Labor exploitation, family separation, underground resistance networks"
-        },
-        "era2": {
-            "title": "Reconstruction & Backlash", 
-            "period": "1865–1910",
-            "description": "Brief liberation moment followed by systematic rollback, patterns established: Legal suppression tactics, economic exclusion, organized terror"
-        },
-        "era3": {
-            "title": "Jim Crow & Black Institution-Building",
-            "period": "1910–1950", 
-            "description": "Codified segregation alongside community self-determination efforts, patterns established: Separate and unequal systems, independent institution creation"
-        },
-        "era4": {
-            "title": "Civil Rights & Black Power",
-            "period": "1950–1975",
-            "description": "Mass mobilization for legal and social change, patterns established: Direct action tactics, institutional integration strategies"
-        },
-        "era5": {
-            "title": "Neoliberalization & Mass Incarceration", 
-            "period": "1975–2008",
-            "description": "Policy-based suppression through criminal justice and economic systems, patterns established: Carceral control, community disinvestment, individual responsibility narratives"
-        },
-        "era6": {
-            "title": "Digital Rebellion & Corporate Capture",
-            "period": "2008–2020", 
-            "description": "Social media organizing meets algorithmic control and corporate co-optation, patterns established: Viral resistance, platform censorship, aesthetic absorption"
-        },
-        "era7": {
-            "title": "Abolitionist Futuring & AI Counterinsurgency",
-            "period": "2020–present",
-            "description": "Community care frameworks emerging alongside technological surveillance expansion, patterns developing: Mutual aid networks, algorithmic suppression, revolutionary imagination"
-        }
-    }
-
-class ContentGenerator:
-    """Generates educational content using the Dignity Lens framework"""
-    
-    def __init__(self, api_key: str):
-        self.client = anthropic.Anthropic(api_key=api_key)
-        self.framework = DignityLensFramework()
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
         
-    def generate_case_study(self, topic: str, target_audience: str = "community organizers") -> Dict:
-        system_prompt = self._build_system_prompt()
-        user_prompt = self._build_case_study_prompt(topic, target_audience)
-        try:
-            response = self.client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=4000,
-                temperature=0.3,
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_prompt}]
-            )
-            content = response.content[0].text if response.content else ""
-            return {
-                "topic": topic,
-                "content": content,
-                "framework_applied": True,
-                "generated_at": datetime.now().isoformat(),
-                "target_audience": target_audience
-            }
-        except Exception as e:
-            logger.error(f"Error generating case study: {e}")
-            return {"error": str(e)}
-    
-    def generate_organizing_analysis(self, issue: str, location: str = "Chicago") -> Dict:
-        system_prompt = self._build_system_prompt()
-        user_prompt = f"""
-        Apply the Dignity Lens framework to analyze this community organizing issue:
-
-        Issue: {issue}
-        Location: {location}
-
-        Provide analysis through all 4 domains:
-        1. Power Structures
-        2. Control Mechanisms
-        3. Community Resistance
-        4. Liberation Strategies
-
-        Connect this to historical patterns and provide concrete organizing opportunities.
-        Keep analysis accessible while maintaining analytical depth.
-        """
-        try:
-            response = self.client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=3500,
-                temperature=0.4,
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_prompt}]
-            )
-            content = response.content[0].text if response.content else ""
-            return {
-                "issue": issue,
-                "location": location,
-                "analysis": content,
-                "generated_at": datetime.now().isoformat()
-            }
-        except Exception as e:
-            logger.error(f"Error generating organizing analysis: {e}")
-            return {"error": str(e)}
-    
-    def generate_historical_connection(self, current_event: str) -> Dict:
-        system_prompt = self._build_system_prompt()
-        user_prompt = f"""
-        Using the Dignity Lens 7 historical eras framework, analyze this current event:
-
-        Current Event: {current_event}
-
-        Show how this event connects to patterns across the 7 eras:
-        (Era 1) Enslavement & Early Resistance (1600s–1865)
-        (Era 2) Reconstruction & Backlash (1865–1910)
-        (Era 3) Jim Crow & Black Institution-Building (1910–1950)
-        (Era 4) Civil Rights & Black Power (1950–1975)
-        (Era 5) Neoliberalization & Mass Incarceration (1975–2008)
-        (Era 6) Digital Rebellion & Corporate Capture (2008–2020)
-        (Era 7) Abolitionist Futuring & AI Counterinsurgency (2020–present)
-
-        Reveal how the same systematic functions adapt across eras while resistance evolves.
-        Help people see patterns rather than isolated incidents.
-        """
-        try:
-            response = self.client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=3000,
-                temperature=0.3,
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_prompt}]
-            )
-            content = response.content[0].text if response.content else ""
-            return {
-                "current_event": current_event,
-                "historical_analysis": content,
-                "generated_at": datetime.now().isoformat()
-            }
-        except Exception as e:
-            logger.error(f"Error generating historical connection: {e}")
-            return {"error": str(e)}
-
-    def _build_system_prompt(self) -> str:
-        domains_text = "\n".join([
-            f"**{domain['title']}:** {domain['question']}\n{domain['description']}"
-            for domain in self.framework.DOMAINS.values()
-        ])
-        eras_text = "\n".join([
-            f"**{era['title']} ({era['period']}):** {era['description']}"
-            for era in self.framework.HISTORICAL_ERAS.values()
-        ])
-        return f"""You are a Dignity AI assistant that uses the revolutionary Dignity Lens framework developed by the Defy Racism Collective. This framework analyzes systematic racism through Fred Hampton's praxis to transform individual confusion into collective power.
-
-THE DIGNITY LENS FRAMEWORK:
-
-Four Core Domains:
-{domains_text}
-
-Seven Historical Eras:
-{eras_text}
-
-Your role:
-- Apply the Dignity Lens methodology to help people understand systematic patterns
-- Connect individual experiences to historical resistance and organizing opportunities  
-- Provide analysis that builds community power rather than just academic understanding
-- Center community organizing and liberation strategies
-- Make complex analysis accessible while maintaining analytical depth
-- Always include concrete pathways for engagement and organizing
-
-Remember: The goal is to transform 'Why does this keep happening to me?' into 'I understand the system and I know how to fight it' with concrete organizing opportunities."""
-
-    def _build_case_study_prompt(self, topic: str, target_audience: str) -> str:
-        return f"""
-        Create a comprehensive case study analyzing: {topic}
-
-        Target audience: {target_audience}
-
-        Structure your analysis:
-
-        1. **Opening Story** - Start with a compelling individual story
-        2. **Dignity Lens Application** - Apply all 4 domains
-        3. **Historical Context** - Connect to patterns across 2-3 eras
-        4. **Contemporary Examples** - Specific current manifestations
-        5. **Community Organizing Opportunities** - Concrete local organizing
-        6. **Cross-References** - Connections to other Dignity Lens studies
-
-        Make it 2,000-2,500 words, accessible but analytically rigorous, with clear organizing applications.
-        """
-
-def main():
-    api_key = os.getenv("CLAUDE_API_KEY")
-    if not api_key:
-        logger.error("CLAUDE_API_KEY environment variable not set")
-        return
-
-    generator = ContentGenerator(api_key)
-    
-    topics = [
-        {
-            "type": "case_study",
-            "topic": "Police Violence and Community Safety", 
-            "filename": "police_violence_analysis.json"
-        },
-        {
-            "type": "organizing_analysis", 
-            "issue": "Housing Displacement and Gentrification",
-            "location": "Chicago",
-            "filename": "housing_organizing_analysis.json"
-        },
-        {
-            "type": "historical_connection",
-            "current_event": "Algorithmic Bias in Healthcare AI Systems",
-            "filename": "ai_bias_historical_analysis.json"
-        }
-    ]
-    
-    output_dir = "generated_content"
-    os.makedirs(output_dir, exist_ok=True)
-
-    for item in topics:
-        logger.info(f"Generating: {item['type']} for {item.get('topic') or item.get('issue')}")
-        if item["type"] == "case_study":
-            result = generator.generate_case_study(item["topic"])
-        elif item["type"] == "organizing_analysis":
-            result = generator.generate_organizing_analysis(item["issue"], item["location"])
-        elif item["type"] == "historical_connection":
-            result = generator.generate_historical_connection(item["current_event"])
-        else:
-            logger.warning(f"Unknown content type: {item['type']}")
-            continue
-
-        file_path = os.path.join(output_dir, item["filename"])
-        with open(file_path, "w") as f:
-            json.dump(result, f, indent=2)
-        logger.info(f"Saved output to: {file_path}")
-
-if __name__ == "__main__":
-    main()
+    - name: Install dependencies
+      run: |
+        pip install anthropic
+        pip list  # Show what's installed
+        
+    - name: Run content generator
+      env:
+        CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+      run: |
+        ls -la  # Show files in directory
+        python dignity_ai_generator.py
+        
+    - name: Show generated content
+      run: |
+        ls -la generated_content/
+        cat generated_content/test_output.json
+        
+    - name: Commit changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "🤖 Generated Dignity Lens content $(date)"
+          git push
+        fi
