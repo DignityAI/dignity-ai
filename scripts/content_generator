@@ -254,7 +254,7 @@ Format as markdown with:
 ## Community Organizing Opportunities
 ## Conclusion
 
-Connect to historical patterns, provide concrete Chicago organizing opportunities, and address any fact-check concerns identified above.
+Connect to historical patterns, provide concrete organizing opportunities relevant to the local community discussed in the article, and address any fact-check concerns identified above.
 """
 
 def create_news_article_prompt(article, fact_check_result=None):
@@ -289,9 +289,9 @@ Format as:
 [Any additional context or verification needed]
 
 **Community Organizing Opportunities:**
-- [Specific actions residents can take]
-- [Organizations to connect with]
-- [Relevant meetings/events]
+- [Specific actions residents can take in this city/region]
+- [Local organizations to connect with]
+- [Relevant meetings/events in the affected area]
 """
 
 def create_blog_post_prompt(article, fact_check_result=None):
@@ -330,8 +330,8 @@ Format as:
 [Organizing opportunities and hope]
 
 **Get Involved:**
-- [Specific actions]
-- [Organizations to support]
+- [Specific actions relevant to this city/region]
+- [Local organizations to support]
 """
 
 def call_claude_api(prompt, max_retries=3):
