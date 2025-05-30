@@ -1,0 +1,18 @@
+# requirements.txt
+# Core dependencies for Dignity AI Content Generator
+
+# HTTP and web scraping
+requests>=2.32.0
+feedparser>=6.0.11
+
+# AI/ML
+anthropic>=0.52.0
+
+# Date handling
+python-dateutil>=2.9.0
+
+# Optional: HTML parsing (in case we need it later)
+beautifulsoup4>=4.12.0
+
+# Optional: Better JSON handling
+orjson>=3.9.0
