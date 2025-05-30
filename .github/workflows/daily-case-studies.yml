@@ -83,15 +83,21 @@ jobs:
           TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S UTC')
           FILE_COUNT=$(find generated_content -name "*.md" | wc -l)
           
-          git commit -m "🤖 Generated Dignity Lens content analysis
-          
-Generated: $TIMESTAMP
-Files: $FILE_COUNT markdown analyses
-Framework: Dignity Lens (Defy Racism Collective)
-
-Automated content generation using systematic racism analysis
-Visit: https://defyracismcollective.org"
-          
+- name: Commit and push changes
+  run: |
+    git add .
+    git commit -m "$(cat << 'EOF'
+    🤖 Generated Dignity Lens content analysis
+    
+    Generated: $TIMESTAMP
+    Files: $FILE_COUNT markdown analyses
+    Framework: Dignity Lens (Defy Racism Collective)
+    
+    Automated content generation using systematic racism analysis
+    Visit: https://defyracismcollective.org
+    EOF
+    )"
+    git push
           git push
           echo "✅ Pushed new content to repository"
         fi
