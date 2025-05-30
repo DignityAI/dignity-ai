@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Complete Implementation Guide for RSS Feed System + Dignity AI
-Step-by-step setup with all necessary files
+Dignity AI RSS System - Community-controlled AI for systematic racism education
 """
 
 import os
