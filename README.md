@@ -165,4 +165,131 @@ Edit `RSS_FEEDS` and `KEYWORDS` in `scripts/content_generator.py`
 - Provides detailed logs and error reporting
 
 ### Content Quality:
-- Each analysis includes metadata an
+- Each analysis includes metadata and source attribution
+- Framework consistency enforced through system prompts
+- Concrete organizing opportunities in every analysis
+- Historical connections to build systematic understanding
+
+### Output Monitoring:
+- `generated_content/index.json` tracks generation metrics
+- Git commits include file counts and timestamps
+- Failed generations logged with detailed error messages
+
+## 🎯 Goals & Impact
+
+### Transform Understanding:
+**From:** "Why does this keep happening to me?"  
+**To:** "I understand the system and I know how to fight it"
+
+### Build Community Power:
+- Connect individual news stories to systematic patterns
+- Provide concrete organizing opportunities
+- Build historical consciousness and strategic thinking
+- Center community organizing and liberation strategies
+
+### Educational Outcomes:
+- **Systematic Analysis** - Help people see patterns across centuries
+- **Historical Consciousness** - Connect current issues to resistance history  
+- **Organizing Strategy** - Provide concrete pathways for community engagement
+- **Liberation Framework** - Build understanding of what actually works
+
+## 🤝 Community Engagement
+
+### Chicago Organizing Connections:
+Each analysis includes specific opportunities to engage with:
+- Community organizations and campaigns
+- Policy advocacy and electoral organizing  
+- Mutual aid and community defense networks
+- Educational and cultural organizing
+
+### Cross-Movement Building:
+- Connect housing justice to police accountability
+- Link education organizing to economic development
+- Build solidarity across racial and geographic lines
+- Center intersectional analysis and coalition building
+
+## 📚 Learn More
+
+### Dignity Lens Framework:
+- **Website:** https://defyracismcollective.org
+- **Framework Documentation:** Complete case studies and historical analysis
+- **Political Education:** Study guides and organizing tools
+- **Community Organizing:** Local engagement opportunities
+
+### Related Projects:
+- **People's Newsroom** - Community journalism with systematic analysis
+- **Community Health Worker Training** - Healthcare organizing with dignity metrics
+- **Participatory Budgeting** - Direct democracy and community control
+
+## 🔐 Privacy & Ethics
+
+### Data Handling:
+- **No personal data collection** - Only public RSS feeds analyzed
+- **No storage of sensitive information** - Temporary processing only
+- **Open source methodology** - Transparent analysis framework
+
+### Ethical AI Use:
+- **Community-controlled technology** - Serves organizing rather than surveillance
+- **Liberation-focused analysis** - Centers community power building
+- **Anti-oppression framework** - Challenges rather than perpetuates systematic bias
+
+## 🚀 Contributing
+
+### Code Contributions:
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/improvement-name`
+3. Commit changes: `git commit -m "Add improvement"`
+4. Push to branch: `git push origin feature/improvement-name`
+5. Open Pull Request with detailed description
+
+### Content Feedback:
+- Open GitHub issues for analysis improvements
+- Suggest new RSS feeds or keywords for monitoring
+- Propose framework enhancements or applications
+
+### Community Organizing:
+- Use generated analyses in your organizing work
+- Share with community organizations and study groups
+- Adapt framework for local issues and campaigns
+- Connect with Defy Racism Collective for partnership opportunities
+
+## 📄 License & Attribution
+
+### Framework Credit:
+The Dignity Lens framework was developed by the **Defy Racism Collective** as a tool for community organizing and political education.
+
+### Usage Requirements:
+- **Attribution:** Credit Defy Racism Collective and include #DignityLens
+- **Community Benefit:** Use for organizing, education, and community empowerment
+- **No Commercial Use:** Framework serves liberation, not profit
+
+### Contact:
+- **Organization:** Defy Racism Collective
+- **Website:** https://defyracismcollective.org
+- **Framework:** Dignity Lens for systematic racism analysis
+
+## 🔄 Changelog
+
+### Version 1.0 (Current)
+- ✅ Core Dignity Lens framework integration
+- ✅ Chicago RSS feed monitoring  
+- ✅ Individual article analysis generation
+- ✅ Trend analysis across multiple articles
+- ✅ Daily organizing prompt fallback
+- ✅ GitHub Actions automation
+- ✅ Comprehensive error handling and logging
+
+### Planned Features:
+- 📋 Community feedback integration
+- 📋 Multi-city expansion beyond Chicago
+- 📋 Interactive analysis dashboard
+- 📋 Community organizing campaign tracking
+- 📋 Historical archive search functionality
+
+---
+
+**🎯 Mission:** Transform individual confusion into collective understanding and community power through systematic racism analysis.
+
+**🔗 Learn More:** https://defyracismcollective.org
+
+**#DignityLens #CommunityPower #SystematicAnalysis**
