@@ -1,4 +1,5 @@
 # scripts/content_generator.py
+from auto_annotate import DignityAnnotator
 import feedparser
 import requests
 from bs4 import BeautifulSoup
@@ -14,6 +15,9 @@ from knowledge_accumulation import LiberationKnowledgeSystem, extract_location_f
 # Initialize Claude API and Knowledge System
 client = Anthropic(api_key=os.environ['CLAUDE_API_KEY'])
 knowledge_system = LiberationKnowledgeSystem()
+
+# Initialize annotation system
+annotator = DignityAnnotator(os.environ['CLAUDE_API_KEY'])
 
 # RSS Feeds to monitor
 RSS_FEEDS = [
