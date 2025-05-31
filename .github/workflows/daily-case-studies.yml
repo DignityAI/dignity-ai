@@ -37,23 +37,5 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         
-        # Add generated files FIRST
-        git add drafts/
-        
-        # Check if there are changes to commit
-        if ! git diff --staged --quiet; then
-          # Now pull latest changes (after staging our changes)
-          git pull origin main --rebase || {
-            echo "Rebase failed, trying merge strategy"
-            git rebase --abort
-            git pull origin main --no-rebase
-          }
-          
-          # Commit our changes
-          git commit -m "Daily content generation: $(date +%Y-%m-%d)"
-          
-          # Push changes
-          git push origin main
-        else
-          echo "No changes to commit"
-        fi
+        git add .
+        git diff --staged --quiet || (git commit -m "Daily content generation: $(date +%Y-%m-%d)" && git push)
