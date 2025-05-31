@@ -1,0 +1,471 @@
+#!/usr/bin/env python3
+"""
+NYC Open Data Dignity Lens Content Generator
+Automatically generates systematic racism analysis using real NYC data
+"""
+
+import requests
+import os
+import json
+from datetime import datetime, timedelta
+from anthropic import Anthropic
+import time
+import pandas as pd
+from typing import Dict, List, Optional, Any
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Initialize Claude API
+client = Anthropic(api_key=os.environ.get('CLAUDE_API_KEY'))
+
+class NYCDataAnalyzer:
+    """Analyzes NYC open data through the Dignity Lens framework"""
+
+    NYC_DATA_ENDPOINTS = {
+        'police_incidents': {
+            'url': 'https://data.cityofnewyork.us/resource/qb7u-rbmr.json',
+            'description': 'NYPD Police Incident Data',
+            'dignity_focus': 'Legal System & Mass Incarceration'
+        },
+        'building_violations': {
+            'url': 'https://data.cityofnewyork.us/resource/3h2n-5cm9.json',
+            'description': 'DOB Building Violations',
+            'dignity_focus': 'Housing & Community Development'
+        },
+        'school_performance': {
+            'url': 'https://data.cityofnewyork.us/resource/uq7m-95z8.json',
+            'description': 'NYC School Quality Reports',
+            'dignity_focus': 'Education & School-to-Prison Pipeline'
+        },
+        'public_health': {
+            'url': 'https://data.cityofnewyork.us/resource/w3tr-8p7e.json',
+            'description': 'Community Health Profiles',
+            'dignity_focus': 'Medical Racism & Community Health'
+        },
+        'business_licenses': {
+            'url': 'https://data.cityofnewyork.us/resource/nc67-uf89.json',
+            'description': 'Active Business Licenses',
+            'dignity_focus': 'Economic Exclusion & Community Wealth Building'
+        },
+        'affordable_housing': {
+            'url': 'https://data.cityofnewyork.us/resource/4v2b-8cgt.json',
+            'description': 'Affordable Housing Production by Project',
+            'dignity_focus': 'Housing & Community Development'
+        },
+        'environmental_health': {
+            'url': 'https://data.cityofnewyork.us/resource/6fi9-q3ta.json',
+            'description': 'Environmental Public Health Tracking',
+            'dignity_focus': 'Environmental Racism & Community Health'
+        },
+        'neighborhoods': {
+            'url': 'https://data.cityofnewyork.us/resource/cpf4-rkhq.json',
+            'description': 'NYC Neighborhood Tabulation Areas',
+            'dignity_focus': 'Power Structures Domain'
+        },
+        'city_budget': {
+            'url': 'https://data.cityofnewyork.us/resource/jb7j-dtam.json',
+            'description': 'NYC Expense Budget',
+            'dignity_focus': 'Government Systems & Political Exclusion'
+        },
+        'mta_ridership': {
+            'url': 'https://data.ny.gov/resource/ivw2-k53g.json',
+            'description': 'MTA Subway Turnstile Data',
+            'dignity_focus': 'Transportation Justice'
+        }
+    }
+
+    SDOH_CATEGORIES = {
+        'economic_stability': ['business_licenses', 'city_budget', 'affordable_housing'],
+        'neighborhood_environment': ['building_violations', 'environmental_health', 'mta_ridership'],
+        'education_access': ['school_performance'],
+        'healthcare_access': ['public_health'],
+        'social_community_context': ['police_incidents', 'neighborhoods'],
+        'housing_stability': ['affordable_housing', 'building_violations']
+    }
+
+    def __init__(self):
+        self.nyc_app_token = os.environ.get('NYC_DATA_TOKEN')  # Optional but recommended
+
+    def fetch_dataset(self, endpoint_key: str, limit: int = 1000, **filters) -> List[Dict]:
+        """Fetch data from NYC Open Data Portal"""
+        if endpoint_key not in self.NYC_DATA_ENDPOINTS:
+            raise ValueError(f"Unknown endpoint: {endpoint_key}")
+
+        endpoint = self.NYC_DATA_ENDPOINTS[endpoint_key]
+        url = endpoint['url']
+
+        params = {'$limit': limit}
+        if self.nyc_app_token:
+            params['$$app_token'] = self.nyc_app_token
+
+        # Add date filter for recent data
+        if '$where' not in filters:
+            if endpoint_key in ['police_incidents', 'building_violations']:
+                thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+                params['$where'] = f"cmplnt_fr_dt >= '{thirty_days_ago}'" if endpoint_key == 'police_incidents' else f"issue_date >= '{thirty_days_ago}'"
+
+        params.update(filters)
+
+        try:
+            logger.info(f"Fetching {endpoint_key} data from NYC Open Data...")
+            response = requests.get(url, params=params, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            logger.info(f"Retrieved {len(data)} records from {endpoint_key}")
+            return data
+        except Exception as e:
+            logger.error(f"Error fetching {endpoint_key}: {e}")
+            return []
+
+    def analyze_racial_disparities(self, data: List[Dict], endpoint_key: str) -> Dict:
+        """Analyze racial disparities in the dataset"""
+        if not data:
+            return {'error': 'No data available'}
+        df = pd.DataFrame(data)
+        analysis = {
+            'endpoint': endpoint_key,
+            'total_records': len(df),
+            'date_range': self._get_date_range(df),
+            'geographic_distribution': self._analyze_geographic_patterns(df),
+            'systematic_patterns': self._identify_systematic_patterns(df, endpoint_key),
+            'dignity_lens_application': self._apply_dignity_lens(df, endpoint_key)
+        }
+        return analysis
+
+    def _get_date_range(self, df: pd.DataFrame) -> Dict:
+        """Extract date range from dataset"""
+        date_columns = [col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()]
+        if not date_columns:
+            return {'note': 'No date columns found'}
+        date_col = date_columns[0]
+        try:
+            df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+            return {
+                'start_date': df[date_col].min().strftime('%Y-%m-%d') if pd.notna(df[date_col].min()) else 'Unknown',
+                'end_date': df[date_col].max().strftime('%Y-%m-%d') if pd.notna(df[date_col].max()) else 'Unknown',
+                'date_column': date_col
+            }
+        except:
+            return {'note': 'Could not parse dates'}
+
+    def _analyze_geographic_patterns(self, df: pd.DataFrame) -> Dict:
+        """Analyze geographic distribution patterns (boroughs, neighborhoods, districts)"""
+        geo_terms = ['borough', 'nta', 'neighborhood', 'community', 'council', 'zip']
+        geographic_cols = [col for col in df.columns if any(geo_term in col.lower() for geo_term in geo_terms)]
+        if not geographic_cols:
+            return {'note': 'No geographic columns found'}
+        geo_col = geographic_cols[0]
+        distribution = df[geo_col].value_counts().to_dict()
+        return {
+            'primary_geographic_field': geo_col,
+            'distribution': distribution,
+            'most_affected_areas': list(df[geo_col].value_counts().head(10).index),
+            'total_areas': df[geo_col].nunique()
+        }
+
+    def _identify_systematic_patterns(self, df: pd.DataFrame, endpoint_key: str) -> Dict:
+        """Identify systematic patterns in the data"""
+        patterns = {
+            'data_quality': {
+                'missing_values': df.isnull().sum().to_dict(),
+                'duplicate_records': df.duplicated().sum()
+            }
+        }
+        # Endpoint-specific pattern analysis
+        if endpoint_key == 'police_incidents':
+            patterns['policing_patterns'] = self._analyze_policing_patterns(df)
+        elif endpoint_key == 'building_violations':
+            patterns['housing_patterns'] = self._analyze_housing_patterns(df)
+        elif endpoint_key == 'school_performance':
+            patterns['education_patterns'] = self._analyze_education_patterns(df)
+        elif endpoint_key == 'public_health':
+            patterns['health_patterns'] = self._analyze_health_patterns(df)
+        elif endpoint_key == 'business_licenses':
+            patterns['economic_patterns'] = self._analyze_economic_patterns(df)
+        return patterns
+
+    def _analyze_policing_patterns(self, df: pd.DataFrame) -> Dict:
+        """Analyze policing data for systematic patterns"""
+        patterns = {}
+        if 'ofns_desc' in df.columns:
+            patterns['offense_types'] = df['ofns_desc'].value_counts().to_dict()
+        if 'arrest_boro' in df.columns:
+            patterns['arrest_borough_distribution'] = df['arrest_boro'].value_counts().to_dict()
+        if 'boro_nm' in df.columns:
+            patterns['borough_distribution'] = df['boro_nm'].value_counts().to_dict()
+        return patterns
+
+    def _analyze_housing_patterns(self, df: pd.DataFrame) -> Dict:
+        """Analyze housing violation patterns"""
+        patterns = {}
+        if 'violation_category' in df.columns:
+            patterns['violation_types'] = df['violation_category'].value_counts().to_dict()
+        if 'borough' in df.columns:
+            patterns['borough_distribution'] = df['borough'].value_counts().to_dict()
+        return patterns
+
+    def _analyze_education_patterns(self, df: pd.DataFrame) -> Dict:
+        """Analyze school performance patterns"""
+        patterns = {}
+        if 'school_name' in df.columns:
+            patterns['total_schools'] = df['school_name'].nunique()
+        return patterns
+
+    def _analyze_health_patterns(self, df: pd.DataFrame) -> Dict:
+        """Analyze public health patterns"""
+        patterns = {}
+        if 'borough' in df.columns:
+            patterns['borough_distribution'] = df['borough'].value_counts().to_dict()
+        return patterns
+
+    def _analyze_economic_patterns(self, df: pd.DataFrame) -> Dict:
+        """Analyze business licensing patterns"""
+        patterns = {}
+        if 'industry' in df.columns:
+            patterns['industry_types'] = df['industry'].value_counts().to_dict()
+        if 'borough' in df.columns:
+            patterns['borough_distribution'] = df['borough'].value_counts().to_dict()
+        return patterns
+
+    def _apply_dignity_lens(self, df: pd.DataFrame, endpoint_key: str) -> Dict:
+        """Apply Dignity Lens framework to the data"""
+        endpoint_info = self.NYC_DATA_ENDPOINTS[endpoint_key]
+        return {
+            'dignity_focus_area': endpoint_info['dignity_focus'],
+            'power_structures_revealed': self._identify_power_structures(df, endpoint_key),
+            'control_mechanisms_shown': self._identify_control_mechanisms(df, endpoint_key),
+            'community_resistance_opportunities': self._identify_resistance_opportunities(df, endpoint_key),
+            'liberation_strategies_suggested': self._suggest_liberation_strategies(df, endpoint_key)
+        }
+
+    def _identify_power_structures(self, df: pd.DataFrame, endpoint_key: str) -> List[str]:
+        """Identify NYC power structures revealed in the data"""
+        if endpoint_key == 'police_incidents':
+            return ['NYPD', 'District Attorneys', 'NYC City Council Public Safety Committee']
+        elif endpoint_key == 'building_violations':
+            return ['NYC Department of Buildings', 'Property Owners/Landlords', 'Borough Presidents']
+        elif endpoint_key == 'school_performance':
+            return ['NYC Department of Education', 'Community Education Councils', 'Mayor’s Office']
+        elif endpoint_key == 'public_health':
+            return ['NYC Department of Health and Mental Hygiene', 'NYC Health + Hospitals']
+        elif endpoint_key == 'business_licenses':
+            return ['NYC Department of Consumer and Worker Protection', 'City Council', 'Borough Presidents']
+        else:
+            return ['NYC government agencies', 'Community stakeholders']
+
+    def _identify_control_mechanisms(self, df: pd.DataFrame, endpoint_key: str) -> List[str]:
+        """Identify control mechanisms shown in the data"""
+        if endpoint_key == 'police_incidents':
+            return ['Selective enforcement patterns', 'Geographic concentration of arrests', 'Differential charge severity']
+        elif endpoint_key == 'building_violations':
+            return ['Unequal code enforcement', 'Delayed repairs in certain neighborhoods', 'Displacement through violation']
+        elif endpoint_key == 'school_performance':
+            return ['Resource allocation disparities', 'Performance-based school closures', 'Disciplinary disparities']
+        elif endpoint_key == 'public_health':
+            return ['Health service deserts', 'Environmental health disparities', 'Limited prevention resources']
+        elif endpoint_key == 'business_licenses':
+            return ['Licensing barriers', 'Unequal business development support', 'Zoning restrictions']
+        else:
+            return ['Administrative barriers', 'Resource allocation patterns']
+
+    def _identify_resistance_opportunities(self, df: pd.DataFrame, endpoint_key: str) -> List[str]:
+        """Identify community resistance opportunities"""
+        return [
+            'Community data analysis and advocacy',
+            'Public records requests for transparency',
+            'Community organizing around patterns revealed',
+            'Policy advocacy based on data evidence',
+            'Coalition building across affected boroughs'
+        ]
+
+    def _suggest_liberation_strategies(self, df: pd.DataFrame, endpoint_key: str) -> List[str]:
+        """Suggest liberation strategies based on data patterns"""
+        if endpoint_key == 'police_incidents':
+            return ['Civilian Complaint Review Board advocacy', 'Community oversight boards', 'Restorative justice initiatives']
+        elif endpoint_key == 'building_violations':
+            return ['Tenant organizing', 'Community land trusts', 'Housing preservation ordinances']
+        elif endpoint_key == 'school_performance':
+            return ['Community schools model', 'Participatory budgeting', 'Local school councils']
+        elif endpoint_key == 'public_health':
+            return ['Community health workers', 'Environmental justice organizing', 'Community-controlled health centers']
+        elif endpoint_key == 'business_licenses':
+            return ['Business incubators', 'Cooperative economics', 'Community development financial institutions']
+        else:
+            return ['Community-controlled alternatives', 'Policy advocacy', 'Organizing infrastructure']
+
+def create_data_analysis_prompt(analysis: Dict, endpoint_key: str) -> str:
+    """Create prompt for Dignity Lens analysis of NYC data"""
+    endpoint_info = NYCDataAnalyzer.NYC_DATA_ENDPOINTS[endpoint_key]
+    return f"""
+You are DignityAI analyzing real New York City open data through the Dignity Lens framework.
+
+DATASET ANALYZED: {endpoint_info['description']}
+DIGNITY FOCUS AREA: {endpoint_info['dignity_focus']}
+
+DATA ANALYSIS SUMMARY:
+- Total records: {analysis.get('total_records', 'Unknown')}
+- Date range: {analysis.get('date_range', {}).get('start_date', 'Unknown')} to {analysis.get('date_range', {}).get('end_date', 'Unknown')}
+- Geographic distribution: {analysis.get('geographic_distribution', {}).get('total_areas', 'Unknown')} areas covered
+- Most affected areas: {', '.join(analysis.get('geographic_distribution', {}).get('most_affected_areas', [])[:5])}
+
+SYSTEMATIC PATTERNS IDENTIFIED:
+{json.dumps(analysis.get('systematic_patterns', {}), indent=2)}
+
+DIGNITY LENS APPLICATION:
+{json.dumps(analysis.get('dignity_lens_application', {}), indent=2)}
+
+Create a comprehensive analysis (1200-1500 words) that transforms this data into community organizing insights:
+
+# NYC DATA ANALYSIS: {endpoint_info['description']}
+## Executive Summary: What the Data Reveals About Systematic Racism in NYC
+
+## Raw Data Analysis
+### Geographic Patterns and Disparities (by borough, neighborhood, or council district)
+### Temporal Trends and Patterns
+### Systematic Inequalities Revealed
+
+## Dignity Lens Analysis
+
+### Power Structures (Who Controls These Decisions)
+- Which NYC agencies and officials control this area
+- How decisions are made and who's excluded
+- Private/corporate interests involved
+- Community representation gaps
+
+### Control Mechanisms (How Communities Are Contained)
+- How this data shows systematic suppression in NYC
+- Geographic targeting patterns revealed (borough, neighborhood, council district)
+- Administrative barriers identified
+- Resource allocation disparities
+
+### Community Resistance (How Communities Fight Back)
+- Current organizing around these issues
+- Community organizations working in NYC on this
+- Successful resistance examples in NYC
+- Cross-borough organizing opportunities
+
+### Liberation Strategies (What Can Build Community Power)
+- Policy changes that would address root causes
+- Community-controlled alternatives to develop
+- Coalition building opportunities
+- Organizing campaigns to launch
+
+## Historical Context
+### How This Connects to NYC's History of Systematic Racism
+### Evolution of These Control Mechanisms Over Time
+### Previous Community Victories in This Area
+
+## Cross-Issue Connections
+### How This Data Connects to Other NYC Data Patterns
+### Intersections with Housing, Education, Health, Economic Justice
+### Multi-Issue Organizing Opportunities
+
+## Community Organizing Action Plan
+
+### Immediate Actions (Next 30 days)
+- Data-driven advocacy opportunities
+- Public records requests to make
+- Community education using this data
+- Coalition building based on borough/neighborhood patterns
+
+### Medium-Term Campaigns (3-6 months)  
+- Policy advocacy campaigns to launch
+- Community organizing drives to begin
+- Coalition building across affected boroughs
+- Media strategy using data evidence
+
+### Long-Term Power Building (6+ months)
+- Systematic changes to advocate for
+- Community-controlled alternatives to build
+- Regional organizing connections to make
+- Electoral organizing opportunities
+
+## Community Research and Data Justice
+### How Communities Can Use This Data for Organizing
+### Additional Data Requests to Make
+### Community-Controlled Research Opportunities
+### Data Justice and Transparency Advocacy
+
+## NYC-Specific Organizing Opportunities
+### Council Member Advocacy Based on District Patterns
+### City Council Committee Engagement
+### Community Board and Commission Advocacy
+### Cross-Borough Coalition Building
+
+## Conclusion: From Data to Community Power
+Transform systematic NYC data patterns into community organizing for liberation
+
+**Key Takeaway:** [One sentence summary of most important organizing opportunity]
+
+**Immediate Next Steps:** [Three concrete actions NYC communities can take this week]
+
+Focus on actionable organizing insights rather than academic analysis. This should help NYC organizers understand power and build community liberation.
+"""
+
+def call_claude_api(prompt: str, max_retries: int = 3) -> Optional[str]:
+    """Send prompt to Claude API with retry logic"""
+    for attempt in range(max_retries):
+        try:
+            message = client.messages.create(
+                model="claude-3-5-haiku-20241022",
+                max_tokens=4000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            time.sleep(1.5)
+            return message.content[0].text
+        except Exception as e:
+            logger.error(f"Claude API error (attempt {attempt + 1}): {e}")
+            if attempt < max_retries - 1:
+                time.sleep(5)
+            else:
+                return None
+
+def save_content(content: str, content_type: str, dataset_name: str):
+    """Save generated content to appropriate folder"""
+    if not content:
+        return
+    os.makedirs(f'drafts/{content_type}', exist_ok=True)
+    date_str = datetime.now().strftime('%Y%m%d')
+    filename = f'drafts/{content_type}/{date_str}-nyc-{dataset_name}.md'
+    with open(filename, 'w', encoding='utf-8') as f:
+        f.write(content)
+    logger.info(f"✅ Saved: {filename}")
+
+def main():
+    """Main content generation function using NYC open data"""
+    logger.info("🚀 Starting NYC Open Data Dignity Lens content generation...")
+    analyzer = NYCDataAnalyzer()
+    priority_datasets = [
+        'police_incidents', 'building_violations', 'school_performance',
+        'public_health', 'business_licenses', 'affordable_housing',
+        'environmental_health', 'neighborhoods', 'city_budget', 'mta_ridership'
+    ]
+    processed_count = 0
+    for dataset_key in priority_datasets:
+        logger.info(f"\n📊 Processing {dataset_key}...")
+        try:
+            data = analyzer.fetch_dataset(dataset_key, limit=1000)
+            if not data:
+                logger.warning(f"No data retrieved for {dataset_key}")
+                continue
+            analysis = analyzer.analyze_racial_disparities(data, dataset_key)
+            logger.info(f"✅ Analysis complete for {dataset_key}")
+            analysis_prompt = create_data_analysis_prompt(analysis, dataset_key)
+            dignity_analysis = call_claude_api(analysis_prompt)
+            save_content(dignity_analysis, 'nyc-data-analysis', dataset_key)
+            analysis_filename = f'drafts/raw-data-analysis/{datetime.now().strftime("%Y%m%d")}-{dataset_key}-analysis.json'
+            os.makedirs('drafts/raw-data-analysis', exist_ok=True)
+            with open(analysis_filename, 'w', encoding='utf-8') as f:
+                json.dump(analysis, f, indent=2, default=str)
+            logger.info(f"💾 Saved raw analysis: {analysis_filename}")
+            processed_count += 1
+        except Exception as e:
+            logger.error(f"Error processing {dataset_key}: {e}")
+            continue
+    logger.info(f"\n🎉 NYC data analysis complete! Processed {processed_count} datasets.")
+
+if __name__ == "__main__":
+    main()
