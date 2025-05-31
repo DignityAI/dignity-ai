@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 NYC Open Data Dignity Lens Content Generator
-Automatically generates systematic racism analysis using real NYC data
+Automatically generates systematic racism analysis using real NYC data,
+including borough/neighborhood/council field mapping and NYC-specific power mapping.
 """
 
 import requests
@@ -20,6 +21,16 @@ logger = logging.getLogger(__name__)
 
 # Initialize Claude API
 client = Anthropic(api_key=os.environ.get('CLAUDE_API_KEY'))
+
+def get_geographic_field(df, possible_fields):
+    """
+    Returns the first matching geographic field from the dataframe.
+    Example possible_fields: ['borough', 'boro_nm', 'arrest_boro', 'BOROUGH', 'boro']
+    """
+    for field in possible_fields:
+        if field in df.columns:
+            return field
+    return None
 
 class NYCDataAnalyzer:
     """Analyzes NYC open data through the Dignity Lens framework"""
@@ -77,15 +88,6 @@ class NYCDataAnalyzer:
         }
     }
 
-    SDOH_CATEGORIES = {
-        'economic_stability': ['business_licenses', 'city_budget', 'affordable_housing'],
-        'neighborhood_environment': ['building_violations', 'environmental_health', 'mta_ridership'],
-        'education_access': ['school_performance'],
-        'healthcare_access': ['public_health'],
-        'social_community_context': ['police_incidents', 'neighborhoods'],
-        'housing_stability': ['affordable_housing', 'building_violations']
-    }
-
     def __init__(self):
         self.nyc_app_token = os.environ.get('NYC_DATA_TOKEN')  # Optional but recommended
 
@@ -100,13 +102,6 @@ class NYCDataAnalyzer:
         params = {'$limit': limit}
         if self.nyc_app_token:
             params['$$app_token'] = self.nyc_app_token
-
-        # Add date filter for recent data
-        if '$where' not in filters:
-            if endpoint_key in ['police_incidents', 'building_violations']:
-                thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
-                params['$where'] = f"cmplnt_fr_dt >= '{thirty_days_ago}'" if endpoint_key == 'police_incidents' else f"issue_date >= '{thirty_days_ago}'"
-
         params.update(filters)
 
         try:
@@ -121,7 +116,7 @@ class NYCDataAnalyzer:
             return []
 
     def analyze_racial_disparities(self, data: List[Dict], endpoint_key: str) -> Dict:
-        """Analyze racial disparities in the dataset"""
+        """Analyze disparities in the dataset"""
         if not data:
             return {'error': 'No data available'}
         df = pd.DataFrame(data)
@@ -136,7 +131,6 @@ class NYCDataAnalyzer:
         return analysis
 
     def _get_date_range(self, df: pd.DataFrame) -> Dict:
-        """Extract date range from dataset"""
         date_columns = [col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()]
         if not date_columns:
             return {'note': 'No date columns found'}
@@ -152,22 +146,24 @@ class NYCDataAnalyzer:
             return {'note': 'Could not parse dates'}
 
     def _analyze_geographic_patterns(self, df: pd.DataFrame) -> Dict:
-        """Analyze geographic distribution patterns (boroughs, neighborhoods, districts)"""
-        geo_terms = ['borough', 'nta', 'neighborhood', 'community', 'council', 'zip']
-        geographic_cols = [col for col in df.columns if any(geo_term in col.lower() for geo_term in geo_terms)]
-        if not geographic_cols:
+        borough_field = get_geographic_field(df, ['borough', 'boro_nm', 'arrest_boro', 'BOROUGH', 'boro'])
+        nta_field = get_geographic_field(df, ['nta', 'ntaname', 'neighborhood', 'NTAName', 'nta_code'])
+        council_field = get_geographic_field(df, ['council_district', 'COUNCIL_DISTRICT', 'council'])
+        zip_field = get_geographic_field(df, ['zipcode', 'zip_code', 'ZIP', 'zip'])
+
+        field = borough_field or nta_field or council_field or zip_field
+        if not field:
             return {'note': 'No geographic columns found'}
-        geo_col = geographic_cols[0]
-        distribution = df[geo_col].value_counts().to_dict()
+
+        distribution = df[field].value_counts().to_dict()
         return {
-            'primary_geographic_field': geo_col,
+            'primary_geographic_field': field,
             'distribution': distribution,
-            'most_affected_areas': list(df[geo_col].value_counts().head(10).index),
-            'total_areas': df[geo_col].nunique()
+            'most_affected_areas': list(df[field].value_counts().head(10).index),
+            'total_areas': df[field].nunique()
         }
 
     def _identify_systematic_patterns(self, df: pd.DataFrame, endpoint_key: str) -> Dict:
-        """Identify systematic patterns in the data"""
         patterns = {
             'data_quality': {
                 'missing_values': df.isnull().sum().to_dict(),
@@ -188,7 +184,6 @@ class NYCDataAnalyzer:
         return patterns
 
     def _analyze_policing_patterns(self, df: pd.DataFrame) -> Dict:
-        """Analyze policing data for systematic patterns"""
         patterns = {}
         if 'ofns_desc' in df.columns:
             patterns['offense_types'] = df['ofns_desc'].value_counts().to_dict()
@@ -199,7 +194,6 @@ class NYCDataAnalyzer:
         return patterns
 
     def _analyze_housing_patterns(self, df: pd.DataFrame) -> Dict:
-        """Analyze housing violation patterns"""
         patterns = {}
         if 'violation_category' in df.columns:
             patterns['violation_types'] = df['violation_category'].value_counts().to_dict()
@@ -208,21 +202,18 @@ class NYCDataAnalyzer:
         return patterns
 
     def _analyze_education_patterns(self, df: pd.DataFrame) -> Dict:
-        """Analyze school performance patterns"""
         patterns = {}
         if 'school_name' in df.columns:
             patterns['total_schools'] = df['school_name'].nunique()
         return patterns
 
     def _analyze_health_patterns(self, df: pd.DataFrame) -> Dict:
-        """Analyze public health patterns"""
         patterns = {}
         if 'borough' in df.columns:
             patterns['borough_distribution'] = df['borough'].value_counts().to_dict()
         return patterns
 
     def _analyze_economic_patterns(self, df: pd.DataFrame) -> Dict:
-        """Analyze business licensing patterns"""
         patterns = {}
         if 'industry' in df.columns:
             patterns['industry_types'] = df['industry'].value_counts().to_dict()
@@ -231,7 +222,6 @@ class NYCDataAnalyzer:
         return patterns
 
     def _apply_dignity_lens(self, df: pd.DataFrame, endpoint_key: str) -> Dict:
-        """Apply Dignity Lens framework to the data"""
         endpoint_info = self.NYC_DATA_ENDPOINTS[endpoint_key]
         return {
             'dignity_focus_area': endpoint_info['dignity_focus'],
@@ -242,7 +232,6 @@ class NYCDataAnalyzer:
         }
 
     def _identify_power_structures(self, df: pd.DataFrame, endpoint_key: str) -> List[str]:
-        """Identify NYC power structures revealed in the data"""
         if endpoint_key == 'police_incidents':
             return ['NYPD', 'District Attorneys', 'NYC City Council Public Safety Committee']
         elif endpoint_key == 'building_violations':
@@ -253,11 +242,12 @@ class NYCDataAnalyzer:
             return ['NYC Department of Health and Mental Hygiene', 'NYC Health + Hospitals']
         elif endpoint_key == 'business_licenses':
             return ['NYC Department of Consumer and Worker Protection', 'City Council', 'Borough Presidents']
+        elif endpoint_key == 'mta_ridership':
+            return ['MTA Board', 'MTA Chair', 'NYS Governor', 'NYC Council Transportation Committee']
         else:
             return ['NYC government agencies', 'Community stakeholders']
 
     def _identify_control_mechanisms(self, df: pd.DataFrame, endpoint_key: str) -> List[str]:
-        """Identify control mechanisms shown in the data"""
         if endpoint_key == 'police_incidents':
             return ['Selective enforcement patterns', 'Geographic concentration of arrests', 'Differential charge severity']
         elif endpoint_key == 'building_violations':
@@ -268,11 +258,12 @@ class NYCDataAnalyzer:
             return ['Health service deserts', 'Environmental health disparities', 'Limited prevention resources']
         elif endpoint_key == 'business_licenses':
             return ['Licensing barriers', 'Unequal business development support', 'Zoning restrictions']
+        elif endpoint_key == 'mta_ridership':
+            return ['Fare enforcement disparities', 'Service allocation inequities', 'Accessibility gaps']
         else:
             return ['Administrative barriers', 'Resource allocation patterns']
 
     def _identify_resistance_opportunities(self, df: pd.DataFrame, endpoint_key: str) -> List[str]:
-        """Identify community resistance opportunities"""
         return [
             'Community data analysis and advocacy',
             'Public records requests for transparency',
@@ -282,7 +273,6 @@ class NYCDataAnalyzer:
         ]
 
     def _suggest_liberation_strategies(self, df: pd.DataFrame, endpoint_key: str) -> List[str]:
-        """Suggest liberation strategies based on data patterns"""
         if endpoint_key == 'police_incidents':
             return ['Civilian Complaint Review Board advocacy', 'Community oversight boards', 'Restorative justice initiatives']
         elif endpoint_key == 'building_violations':
@@ -293,116 +283,106 @@ class NYCDataAnalyzer:
             return ['Community health workers', 'Environmental justice organizing', 'Community-controlled health centers']
         elif endpoint_key == 'business_licenses':
             return ['Business incubators', 'Cooperative economics', 'Community development financial institutions']
+        elif endpoint_key == 'mta_ridership':
+            return ['Fare equity coalitions', 'Transit justice organizing', 'Accessibility task forces']
         else:
             return ['Community-controlled alternatives', 'Policy advocacy', 'Organizing infrastructure']
 
-def create_data_analysis_prompt(analysis: Dict, endpoint_key: str) -> str:
-    """Create prompt for Dignity Lens analysis of NYC data"""
-    endpoint_info = NYCDataAnalyzer.NYC_DATA_ENDPOINTS[endpoint_key]
+def create_nypd_power_mapping_prompt(analysis: Dict) -> str:
     return f"""
-You are DignityAI analyzing real New York City open data through the Dignity Lens framework.
+You are DignityAI creating a POWER MAPPING analysis for NYC organizers focused on NYPD policing data.
 
-DATASET ANALYZED: {endpoint_info['description']}
-DIGNITY FOCUS AREA: {endpoint_info['dignity_focus']}
+DATASET ANALYZED: NYPD Police Incident Data
 
-DATA ANALYSIS SUMMARY:
-- Total records: {analysis.get('total_records', 'Unknown')}
-- Date range: {analysis.get('date_range', {}).get('start_date', 'Unknown')} to {analysis.get('date_range', {}).get('end_date', 'Unknown')}
-- Geographic distribution: {analysis.get('geographic_distribution', {}).get('total_areas', 'Unknown')} areas covered
-- Most affected areas: {', '.join(analysis.get('geographic_distribution', {}).get('most_affected_areas', [])[:5])}
+DATA SUMMARY:
+{json.dumps(analysis, indent=2)}
 
-SYSTEMATIC PATTERNS IDENTIFIED:
-{json.dumps(analysis.get('systematic_patterns', {}), indent=2)}
+Please create a detailed power map (1000-1200 words) including:
 
-DIGNITY LENS APPLICATION:
-{json.dumps(analysis.get('dignity_lens_application', {}), indent=2)}
+# NYC POWER MAP: NYPD Policing
 
-Create a comprehensive analysis (1200-1500 words) that transforms this data into community organizing insights:
+## Executive Summary: Who Has Power and How to Challenge It
 
-# NYC DATA ANALYSIS: {endpoint_info['description']}
-## Executive Summary: What the Data Reveals About Systematic Racism in NYC
+## PRIMARY POWER HOLDERS
+- NYPD leadership (Commissioner, Chief of Department)
+- Precinct Commanders (especially in most-affected boroughs/neighborhoods)
+- NYC Mayor's Office (appoints NYPD Commissioner)
+- NYC City Council Public Safety Committee
+- District Attorneys for each borough
 
-## Raw Data Analysis
-### Geographic Patterns and Disparities (by borough, neighborhood, or council district)
-### Temporal Trends and Patterns
-### Systematic Inequalities Revealed
+## COMMUNITY POWER ANALYSIS
+- Most affected neighborhoods/boroughs based on data
+- Community organizations working on NYPD reform (e.g. Communities United for Police Reform, Justice Committee)
+- NYC Civilian Complaint Review Board (CCRB) and its role
 
-## Dignity Lens Analysis
+## POWER RELATIONSHIPS AND PRESSURE POINTS
+- Decision-making and budget cycle for NYPD
+- Police union influence (PBA, SBA, etc.)
+- Oversight mechanisms (City Council, CCRB, Inspector General)
+- Electoral vulnerabilities (Council Members, DAs, Mayor)
 
-### Power Structures (Who Controls These Decisions)
-- Which NYC agencies and officials control this area
-- How decisions are made and who's excluded
-- Private/corporate interests involved
-- Community representation gaps
+## ORGANIZING STRATEGY RECOMMENDATIONS
+- Coalition building (cross-borough, cross-racial)
+- Policy and budget advocacy (City Council budget hearings, participatory budgeting)
+- Campaigns for NYPD transparency, discipline reforms, divest/invest strategies
 
-### Control Mechanisms (How Communities Are Contained)
-- How this data shows systematic suppression in NYC
-- Geographic targeting patterns revealed (borough, neighborhood, council district)
-- Administrative barriers identified
-- Resource allocation disparities
+## TACTICAL POWER ANALYSIS
+- Immediate leverage (budget hearings, public testimony)
+- Medium term (coalition campaigns, electoral organizing)
+- Long term (systemic police accountability, alternative public safety models)
 
-### Community Resistance (How Communities Fight Back)
-- Current organizing around these issues
-- Community organizations working in NYC on this
-- Successful resistance examples in NYC
-- Cross-borough organizing opportunities
+## NYC-SPECIFIC CONSIDERATIONS
+- Borough-level organizing (Brooklyn, Bronx, Queens, Manhattan, Staten Island)
+- Community Board engagement
+- Cross-borough coalition opportunities
 
-### Liberation Strategies (What Can Build Community Power)
-- Policy changes that would address root causes
-- Community-controlled alternatives to develop
-- Coalition building opportunities
-- Organizing campaigns to launch
+## Conclusion: From Power Analysis to Community Power
+"""
 
-## Historical Context
-### How This Connects to NYC's History of Systematic Racism
-### Evolution of These Control Mechanisms Over Time
-### Previous Community Victories in This Area
+def create_mta_power_mapping_prompt(analysis: Dict) -> str:
+    return f"""
+You are DignityAI creating a POWER MAPPING analysis for NYC organizers focused on MTA transit data.
 
-## Cross-Issue Connections
-### How This Data Connects to Other NYC Data Patterns
-### Intersections with Housing, Education, Health, Economic Justice
-### Multi-Issue Organizing Opportunities
+DATASET ANALYZED: MTA Subway Turnstile Data
 
-## Community Organizing Action Plan
+DATA SUMMARY:
+{json.dumps(analysis, indent=2)}
 
-### Immediate Actions (Next 30 days)
-- Data-driven advocacy opportunities
-- Public records requests to make
-- Community education using this data
-- Coalition building based on borough/neighborhood patterns
+Please create a detailed power map (1000-1200 words) including:
 
-### Medium-Term Campaigns (3-6 months)  
-- Policy advocacy campaigns to launch
-- Community organizing drives to begin
-- Coalition building across affected boroughs
-- Media strategy using data evidence
+# NYC POWER MAP: MTA Transit
 
-### Long-Term Power Building (6+ months)
-- Systematic changes to advocate for
-- Community-controlled alternatives to build
-- Regional organizing connections to make
-- Electoral organizing opportunities
+## Executive Summary: Who Has Power and How to Challenge It
 
-## Community Research and Data Justice
-### How Communities Can Use This Data for Organizing
-### Additional Data Requests to Make
-### Community-Controlled Research Opportunities
-### Data Justice and Transparency Advocacy
+## PRIMARY POWER HOLDERS
+- MTA Board and Chair
+- NYC Mayor and Borough Presidents (appoint MTA board members)
+- NYS Governor (appoints MTA Chair, controls funding)
+- NYC Council Transportation Committee
 
-## NYC-Specific Organizing Opportunities
-### Council Member Advocacy Based on District Patterns
-### City Council Committee Engagement
-### Community Board and Commission Advocacy
-### Cross-Borough Coalition Building
+## COMMUNITY POWER ANALYSIS
+- Most transit-dependent neighborhoods/boroughs based on data
+- Transit advocacy groups (e.g. Riders Alliance, Transportation Alternatives)
+- Disability and accessibility organizations
 
-## Conclusion: From Data to Community Power
-Transform systematic NYC data patterns into community organizing for liberation
+## POWER RELATIONSHIPS AND PRESSURE POINTS
+- MTA capital plan and budget process
+- NYS legislative oversight
+- City vs. State control issues
+- Fare enforcement and policing
 
-**Key Takeaway:** [One sentence summary of most important organizing opportunity]
+## ORGANIZING STRATEGY RECOMMENDATIONS
+- Fare equity campaigns
+- Service restoration advocacy
+- Accessibility and ADA compliance campaigns
+- Budget and funding advocacy at city and state level
 
-**Immediate Next Steps:** [Three concrete actions NYC communities can take this week]
+## NYC-SPECIFIC CONSIDERATIONS
+- Borough-level transit disparities
+- Community Board and Council advocacy
+- Cross-borough and cross-constituency coalition building
 
-Focus on actionable organizing insights rather than academic analysis. This should help NYC organizers understand power and build community liberation.
+## Conclusion: From Power Analysis to Community Power
 """
 
 def call_claude_api(prompt: str, max_retries: int = 3) -> Optional[str]:
@@ -453,9 +433,18 @@ def main():
                 continue
             analysis = analyzer.analyze_racial_disparities(data, dataset_key)
             logger.info(f"✅ Analysis complete for {dataset_key}")
-            analysis_prompt = create_data_analysis_prompt(analysis, dataset_key)
-            dignity_analysis = call_claude_api(analysis_prompt)
-            save_content(dignity_analysis, 'nyc-data-analysis', dataset_key)
+
+            # Power Mapping Prompts for NYPD and MTA
+            if dataset_key == "police_incidents":
+                nypd_power_prompt = create_nypd_power_mapping_prompt(analysis)
+                nypd_power_mapping = call_claude_api(nypd_power_prompt)
+                save_content(nypd_power_mapping, 'nyc-power-mapping', 'police_incidents')
+            elif dataset_key == "mta_ridership":
+                mta_power_prompt = create_mta_power_mapping_prompt(analysis)
+                mta_power_mapping = call_claude_api(mta_power_prompt)
+                save_content(mta_power_mapping, 'nyc-power-mapping', 'mta_ridership')
+
+            # Save raw analysis always
             analysis_filename = f'drafts/raw-data-analysis/{datetime.now().strftime("%Y%m%d")}-{dataset_key}-analysis.json'
             os.makedirs('drafts/raw-data-analysis', exist_ok=True)
             with open(analysis_filename, 'w', encoding='utf-8') as f:
