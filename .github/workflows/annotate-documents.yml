@@ -1,7 +1,7 @@
 name: Auto-Annotate Dignity Lens Documents
 on:
   push:
-    paths: ['content/studies/*.md']
+    paths: ['case-studies/orginal/*.md']
   workflow_dispatch:
 
 jobs:
