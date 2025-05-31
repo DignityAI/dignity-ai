@@ -15,6 +15,13 @@ client = Anthropic(api_key=os.environ['CLAUDE_API_KEY'])
 
 # RSS Feeds to monitor
 RSS_FEEDS = [
+    "https://feeds.propublica.org/propublica/main",
+    "https://southsideweekly.com/feed/",
+    "https://philadelphiaweekly.com/feed/",
+    
+    "https://theappeal.org/feed/",
+    "https://www.colorlines.com/rss.xml",
+    "https://truthout.org/feed/"
     "https://billypenn.com/feed",
     "https://wtop.com/feed",
     "https://www.kxan.com/feed",
