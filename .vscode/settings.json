@@ -1,0 +1,13 @@
+{
+  "search.useRegex": true,
+  "editor.rulers": [80, 120],
+  "files.associations": {
+    "*.md": "markdown"
+  },
+  "dignityai.quickAnnotations": {
+    "Sandra Bland": "**[CASE:SANDRA_BLAND]** **[TEXAS]** **[POLICE_VIOLENCE]**",
+    "Fred Hampton": "**[CASE:FRED_HAMPTON]** **[CHICAGO]** **[FBI_ASSASSINATION]**",
+    "systematic racism": "**[SYSTEMATIC_RACISM]**",
+    "community organizing": "**[COMMUNITY_ORGANIZING]**"
+  }
+}
