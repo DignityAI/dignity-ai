@@ -1,0 +1,1090 @@
+#!/usr/bin/env python3
+"""
+Chicago Open Data Dignity Lens Content Generator
+Automatically generates systematic racism analysis using real Chicago data
+"""
+
+import requests
+import os
+import json
+from datetime import datetime, timedelta
+from anthropic import Anthropic
+import time
+import pandas as pd
+from typing import Dict, List, Optional, Any
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Initialize Claude API
+client = Anthropic(api_key=os.environ.get('CLAUDE_API_KEY'))
+
+class ChicagoDataAnalyzer:
+    """Analyzes Chicago open data through the Dignity Lens framework"""
+    
+    # Chicago Open Data API endpoints
+    CHICAGO_DATA_ENDPOINTS = {
+        'police_incidents': {
+            'url': 'https://data.cityofchicago.org/resource/ijzp-q8t2.json',
+            'description': 'Police incidents and arrests by neighborhood',
+            'dignity_focus': 'Legal System & Mass Incarceration'
+        },
+        'building_violations': {
+            'url': 'https://data.cityofchicago.org/resource/22u3-xenr.json', 
+            'description': 'Housing code violations and enforcement patterns',
+            'dignity_focus': 'Housing & Community Development'
+        },
+        'school_performance': {
+            'url': 'https://data.cityofchicago.org/resource/9xs2-f89t.json',
+            'description': 'School performance and resource allocation',
+            'dignity_focus': 'Education & School-to-Prison Pipeline'
+        },
+        'public_health': {
+            'url': 'https://data.cityofchicago.org/resource/iqnk-2tcu.json',
+            'description': 'Community health indicators by area',
+            'dignity_focus': 'Medical Racism & Community Health'
+        },
+        'business_licenses': {
+            'url': 'https://data.cityofchicago.org/resource/r5kz-chrr.json',
+            'description': 'Business licensing patterns and economic development',
+            'dignity_focus': 'Economic Exclusion & Community Wealth Building'
+        },
+        'affordable_housing': {
+            'url': 'https://data.cityofchicago.org/resource/s6ha-ppgi.json',
+            'description': 'Affordable housing units and development',
+            'dignity_focus': 'Housing & Community Development'
+        },
+        'environmental_health': {
+            'url': 'https://data.cityofchicago.org/resource/cjrd-4d2f.json',
+            'description': 'Environmental health hazards and enforcement',
+            'dignity_focus': 'Environmental Racism & Community Health'
+        },
+        'community_areas': {
+            'url': 'https://data.cityofchicago.org/resource/igwz-8jzy.json',
+            'description': 'Community area demographics and characteristics',
+            'dignity_focus': 'Power Structures Domain'
+        },
+        'city_budget': {
+            'url': 'https://data.cityofchicago.org/resource/7h8a-njp7.json',
+            'description': 'City budget allocation by department and community',
+            'dignity_focus': 'Government Systems & Political Exclusion'
+        },
+        'cta_ridership': {
+            'url': 'https://data.cityofchicago.org/resource/5neh-572f.json',
+            'description': 'Public transit access and ridership patterns',
+            'dignity_focus': 'Transportation Justice'
+        }
+    }
+    
+    # SDOH categories mapped to Chicago data
+    SDOH_CATEGORIES = {
+        'economic_stability': ['business_licenses', 'city_budget', 'affordable_housing'],
+        'neighborhood_environment': ['building_violations', 'environmental_health', 'cta_ridership'],
+        'education_access': ['school_performance'],
+        'healthcare_access': ['public_health'],
+        'social_community_context': ['police_incidents', 'community_areas'],
+        'housing_stability': ['affordable_housing', 'building_violations']
+    }
+    
+    def __init__(self):
+        self.base_url = "https://data.cityofchicago.org/resource/"
+        self.app_token = os.environ.get('CHICAGO_DATA_TOKEN')  # Optional but recommended
+        
+    def fetch_dataset(self, endpoint_key: str, limit: int = 1000, **filters) -> List[Dict]:
+        """Fetch data from Chicago Open Data Portal"""
+        if endpoint_key not in self.CHICAGO_DATA_ENDPOINTS:
+            raise ValueError(f"Unknown endpoint: {endpoint_key}")
+        
+        endpoint = self.CHICAGO_DATA_ENDPOINTS[endpoint_key]
+        url = endpoint['url']
+        
+        params = {'$limit': limit}
+        if self.app_token:
+            params['$$app_token'] = self.app_token
+            
+        # Add date filter for recent data
+        if '$where' not in filters:
+            # Get data from last 30 days for incident-based datasets
+            if endpoint_key in ['police_incidents', 'building_violations']:
+                thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+                params['$where'] = f"date >= '{thirty_days_ago}'"
+        
+        params.update(filters)
+        
+        try:
+            logger.info(f"Fetching {endpoint_key} data...")
+            response = requests.get(url, params=params, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            logger.info(f"Retrieved {len(data)} records from {endpoint_key}")
+            return data
+        except Exception as e:
+            logger.error(f"Error fetching {endpoint_key}: {e}")
+            return []
+    
+    def analyze_racial_disparities(self, data: List[Dict], endpoint_key: str) -> Dict:
+        """Analyze racial disparities in the dataset"""
+        if not data:
+            return {'error': 'No data available'}
+        
+        # Convert to DataFrame for analysis
+        df = pd.DataFrame(data)
+        
+        analysis = {
+            'endpoint': endpoint_key,
+            'total_records': len(df),
+            'date_range': self._get_date_range(df),
+            'geographic_distribution': self._analyze_geographic_patterns(df),
+            'systematic_patterns': self._identify_systematic_patterns(df, endpoint_key),
+            'dignity_lens_application': self._apply_dignity_lens(df, endpoint_key)
+        }
+        
+        return analysis
+    
+    def _get_date_range(self, df: pd.DataFrame) -> Dict:
+        """Extract date range from dataset"""
+        date_columns = [col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()]
+        if not date_columns:
+            return {'note': 'No date columns found'}
+        
+        date_col = date_columns[0]
+        try:
+            df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+            return {
+                'start_date': df[date_col].min().strftime('%Y-%m-%d') if pd.notna(df[date_col].min()) else 'Unknown',
+                'end_date': df[date_col].max().strftime('%Y-%m-%d') if pd.notna(df[date_col].max()) else 'Unknown',
+                'date_column': date_col
+            }
+        except:
+            return {'note': 'Could not parse dates'}
+    
+    def _analyze_geographic_patterns(self, df: pd.DataFrame) -> Dict:
+        """Analyze geographic distribution patterns"""
+        geographic_cols = [col for col in df.columns if any(geo_term in col.lower() 
+                          for geo_term in ['community', 'ward', 'district', 'area', 'zip'])]
+        
+        if not geographic_cols:
+            return {'note': 'No geographic columns found'}
+        
+        geo_col = geographic_cols[0]
+        distribution = df[geo_col].value_counts().to_dict()
+        
+        return {
+            'primary_geographic_field': geo_col,
+            'distribution': distribution,
+            'most_affected_areas': list(df[geo_col].value_counts().head(10).index),
+            'total_areas': df[geo_col].nunique()
+        }
+    
+    def _identify_systematic_patterns(self, df: pd.DataFrame, endpoint_key: str) -> Dict:
+        """Identify systematic patterns in the data"""
+        patterns = {
+            'data_quality': {
+                'missing_values': df.isnull().sum().to_dict(),
+                'duplicate_records': df.duplicated().sum()
+            }
+        }
+        
+        # Endpoint-specific pattern analysis
+        if endpoint_key == 'police_incidents':
+            patterns['policing_patterns'] = self._analyze_policing_patterns(df)
+        elif endpoint_key == 'building_violations':
+            patterns['housing_patterns'] = self._analyze_housing_patterns(df)
+        elif endpoint_key == 'school_performance':
+            patterns['education_patterns'] = self._analyze_education_patterns(df)
+        elif endpoint_key == 'public_health':
+            patterns['health_patterns'] = self._analyze_health_patterns(df)
+        elif endpoint_key == 'business_licenses':
+            patterns['economic_patterns'] = self._analyze_economic_patterns(df)
+        
+        return patterns
+    
+    def _analyze_policing_patterns(self, df: pd.DataFrame) -> Dict:
+        """Analyze policing data for systematic patterns"""
+        patterns = {}
+        
+        if 'primary_type' in df.columns:
+            patterns['arrest_types'] = df['primary_type'].value_counts().to_dict()
+        
+        if 'arrest' in df.columns:
+            patterns['arrest_rate'] = df['arrest'].value_counts(normalize=True).to_dict()
+        
+        if 'community_area' in df.columns:
+            patterns['geographic_concentration'] = df['community_area'].value_counts().head(10).to_dict()
+        
+        return patterns
+    
+    def _analyze_housing_patterns(self, df: pd.DataFrame) -> Dict:
+        """Analyze housing violation patterns"""
+        patterns = {}
+        
+        if 'violation_code' in df.columns:
+            patterns['violation_types'] = df['violation_code'].value_counts().to_dict()
+        
+        if 'community_area' in df.columns:
+            patterns['geographic_concentration'] = df['community_area'].value_counts().head(10).to_dict()
+        
+        if 'violation_status' in df.columns:
+            patterns['enforcement_status'] = df['violation_status'].value_counts().to_dict()
+        
+        return patterns
+    
+    def _analyze_education_patterns(self, df: pd.DataFrame) -> Dict:
+        """Analyze school performance patterns"""
+        patterns = {}
+        
+        if 'school_name' in df.columns:
+            patterns['total_schools'] = df['school_name'].nunique()
+        
+        # Look for performance indicators
+        performance_cols = [col for col in df.columns if any(term in col.lower() 
+                           for term in ['rate', 'score', 'percent', 'level'])]
+        patterns['performance_indicators'] = performance_cols
+        
+        return patterns
+    
+    def _analyze_health_patterns(self, df: pd.DataFrame) -> Dict:
+        """Analyze public health patterns"""
+        patterns = {}
+        
+        health_indicator_cols = [col for col in df.columns if any(term in col.lower() 
+                                for term in ['rate', 'percent', 'death', 'birth', 'disease'])]
+        patterns['health_indicators'] = health_indicator_cols
+        
+        if 'community_area' in df.columns:
+            patterns['geographic_coverage'] = df['community_area'].nunique()
+        
+        return patterns
+    
+    def _analyze_economic_patterns(self, df: pd.DataFrame) -> Dict:
+        """Analyze business licensing patterns"""
+        patterns = {}
+        
+        if 'license_type' in df.columns:
+            patterns['business_types'] = df['license_type'].value_counts().to_dict()
+        
+        if 'ward' in df.columns:
+            patterns['ward_distribution'] = df['ward'].value_counts().to_dict()
+        
+        if 'license_status' in df.columns:
+            patterns['license_status'] = df['license_status'].value_counts().to_dict()
+        
+        return patterns
+    
+    def _apply_dignity_lens(self, df: pd.DataFrame, endpoint_key: str) -> Dict:
+        """Apply Dignity Lens framework to the data"""
+        endpoint_info = self.CHICAGO_DATA_ENDPOINTS[endpoint_key]
+        
+        return {
+            'dignity_focus_area': endpoint_info['dignity_focus'],
+            'power_structures_revealed': self._identify_power_structures(df, endpoint_key),
+            'control_mechanisms_shown': self._identify_control_mechanisms(df, endpoint_key),
+            'community_resistance_opportunities': self._identify_resistance_opportunities(df, endpoint_key),
+            'liberation_strategies_suggested': self._suggest_liberation_strategies(df, endpoint_key)
+        }
+    
+    def _identify_power_structures(self, df: pd.DataFrame, endpoint_key: str) -> List[str]:
+        """Identify power structures revealed in the data"""
+        if endpoint_key == 'police_incidents':
+            return ['Chicago Police Department', 'Cook County State\'s Attorney', 'City Council Public Safety Committee']
+        elif endpoint_key == 'building_violations':
+            return ['Department of Buildings', 'Property owners/landlords', 'Aldermanic offices']
+        elif endpoint_key == 'school_performance':
+            return ['Chicago Public Schools Board', 'Illinois State Board of Education', 'Mayor\'s office']
+        elif endpoint_key == 'public_health':
+            return ['Chicago Department of Public Health', 'Cook County Health System', 'Illinois Department of Public Health']
+        elif endpoint_key == 'business_licenses':
+            return ['Department of Business Affairs and Consumer Protection', 'City Council', 'Zoning Board of Appeals']
+        else:
+            return ['City government agencies', 'Community stakeholders']
+    
+    def _identify_control_mechanisms(self, df: pd.DataFrame, endpoint_key: str) -> List[str]:
+        """Identify control mechanisms shown in the data"""
+        if endpoint_key == 'police_incidents':
+            return ['Selective enforcement patterns', 'Geographic concentration of arrests', 'Differential charge severity']
+        elif endpoint_key == 'building_violations':
+            return ['Unequal code enforcement', 'Delayed repairs in certain neighborhoods', 'Displacement through violation']
+        elif endpoint_key == 'school_performance':
+            return ['Resource allocation disparities', 'Performance-based school closures', 'Disciplinary disparities']
+        elif endpoint_key == 'public_health':
+            return ['Health service deserts', 'Environmental health disparities', 'Limited prevention resources']
+        elif endpoint_key == 'business_licenses':
+            return ['Licensing barriers', 'Unequal business development support', 'Zoning restrictions']
+        else:
+            return ['Administrative barriers', 'Resource allocation patterns']
+    
+    def _identify_resistance_opportunities(self, df: pd.DataFrame, endpoint_key: str) -> List[str]:
+        """Identify community resistance opportunities"""
+        return [
+            'Community data analysis and advocacy',
+            'Public records requests for transparency',
+            'Community organizing around patterns revealed',
+            'Policy advocacy based on data evidence',
+            'Coalition building across affected areas'
+        ]
+    
+    def _suggest_liberation_strategies(self, df: pd.DataFrame, endpoint_key: str) -> List[str]:
+        """Suggest liberation strategies based on data patterns"""
+        if endpoint_key == 'police_incidents':
+            return ['Community oversight boards', 'Alternative response programs', 'Restorative justice initiatives']
+        elif endpoint_key == 'building_violations':
+            return ['Tenant organizing', 'Community land trusts', 'Housing preservation ordinances']
+        elif endpoint_key == 'school_performance':
+            return ['Community schools model', 'Participatory budgeting', 'Local school councils']
+        elif endpoint_key == 'public_health':
+            return ['Community health workers', 'Environmental justice organizing', 'Community-controlled health centers']
+        elif endpoint_key == 'business_licenses':
+            return ['Business incubators', 'Cooperative economics', 'Community development financial institutions']
+        else:
+            return ['Community-controlled alternatives', 'Policy advocacy', 'Organizing infrastructure']
+
+def create_data_analysis_prompt(analysis: Dict, endpoint_key: str) -> str:
+    """Create prompt for Dignity Lens analysis of Chicago data"""
+    endpoint_info = ChicagoDataAnalyzer.CHICAGO_DATA_ENDPOINTS[endpoint_key]
+    
+    return f"""
+You are DignityAI analyzing real Chicago open data through the Dignity Lens framework.
+
+DATASET ANALYZED: {endpoint_info['description']}
+DIGNITY FOCUS AREA: {endpoint_info['dignity_focus']}
+
+DATA ANALYSIS SUMMARY:
+- Total records: {analysis.get('total_records', 'Unknown')}
+- Date range: {analysis.get('date_range', {}).get('start_date', 'Unknown')} to {analysis.get('date_range', {}).get('end_date', 'Unknown')}
+- Geographic distribution: {analysis.get('geographic_distribution', {}).get('total_areas', 'Unknown')} areas covered
+- Most affected areas: {', '.join(analysis.get('geographic_distribution', {}).get('most_affected_areas', [])[:5])}
+
+SYSTEMATIC PATTERNS IDENTIFIED:
+{json.dumps(analysis.get('systematic_patterns', {}), indent=2)}
+
+DIGNITY LENS APPLICATION:
+{json.dumps(analysis.get('dignity_lens_application', {}), indent=2)}
+
+Create a comprehensive analysis (1200-1500 words) that transforms this data into community organizing insights:
+
+# CHICAGO DATA ANALYSIS: {endpoint_info['description']}
+## Executive Summary: What the Data Reveals About Systematic Racism
+
+## Raw Data Analysis
+### Geographic Patterns and Disparities
+### Temporal Trends and Patterns
+### Systematic Inequalities Revealed
+
+## Dignity Lens Analysis
+
+### Power Structures (Who Controls These Decisions)
+- Which city departments and officials control this area
+- How decisions are made and who's excluded
+- Corporate and private interests involved
+- Community representation gaps
+
+### Control Mechanisms (How Communities Are Contained)
+- How this data shows systematic suppression
+- Geographic targeting patterns revealed
+- Administrative barriers identified
+- Resource allocation disparities
+
+### Community Resistance (How Communities Fight Back)
+- Current organizing around these issues
+- Community organizations working on this
+- Successful resistance examples in Chicago
+- Cross-neighborhood organizing opportunities
+
+### Liberation Strategies (What Can Build Community Power)
+- Policy changes that would address root causes
+- Community-controlled alternatives to develop
+- Coalition building opportunities
+- Organizing campaigns to launch
+
+## Historical Context
+### How This Connects to Chicago's History of Systematic Racism
+### Evolution of These Control Mechanisms Over Time
+### Previous Community Victories in This Area
+
+## Cross-Issue Connections
+### How This Data Connects to Other Chicago Data Patterns
+### Intersections with Housing, Education, Health, Economic Justice
+### Multi-Issue Organizing Opportunities
+
+## Community Organizing Action Plan
+
+### Immediate Actions (Next 30 days)
+- Data-driven advocacy opportunities
+- Public records requests to make
+- Community education using this data
+- Coalition building based on geographic patterns
+
+### Medium-Term Campaigns (3-6 months)  
+- Policy advocacy campaigns to launch
+- Community organizing drives to begin
+- Coalition building across affected areas
+- Media strategy using data evidence
+
+### Long-Term Power Building (6+ months)
+- Systematic changes to advocate for
+- Community-controlled alternatives to build
+- Regional organizing connections to make
+- Electoral organizing opportunities
+
+## Community Research and Data Justice
+### How Communities Can Use This Data for Organizing
+### Additional Data Requests to Make
+### Community-Controlled Research Opportunities
+### Data Justice and Transparency Advocacy
+
+## Chicago-Specific Organizing Opportunities
+### Aldermanic Advocacy Based on Ward-Level Patterns
+### City Council Committee Engagement
+### Community Board and Commission Advocacy
+### Cross-Neighborhood Coalition Building
+
+## Conclusion: From Data to Community Power
+Transform systematic data patterns into community organizing for liberation
+
+**Key Takeaway:** [One sentence summary of most important organizing opportunity]
+
+**Immediate Next Steps:** [Three concrete actions communities can take this week]
+
+Focus on actionable organizing insights rather than academic analysis. This should help Chicago organizers understand power and build community liberation.
+"""
+
+def create_power_mapping_prompt(analysis: Dict, endpoint_key: str) -> str:
+    """Create power mapping analysis for Chicago data"""
+    endpoint_info = ChicagoDataAnalyzer.CHICAGO_DATA_ENDPOINTS[endpoint_key]
+    
+    return f"""
+You are DignityAI creating a POWER MAPPING analysis for Chicago organizers.
+
+CHICAGO DATA: {endpoint_info['description']}
+FOCUS: {endpoint_info['dignity_focus']}
+
+DATA REVEALS:
+{json.dumps(analysis, indent=2)}
+
+Create a comprehensive POWER MAPPING for Chicago organizers (1000-1200 words):
+
+# CHICAGO POWER MAP: {endpoint_info['description']}
+
+## Executive Summary: Who Has Power and How to Challenge It
+
+## PRIMARY POWER HOLDERS
+
+### City Government Decision Makers
+- **Department Leadership:** [Specific commissioners/directors who control this area]
+- **Aldermanic Power:** [Which aldermen have most influence on this issue]
+- **Mayor's Office Role:** [How mayoral authority affects these decisions]
+- **City Council Committees:** [Which committees control policy and budget]
+
+### Corporate and Private Interests
+- **Corporate Beneficiaries:** [Companies that profit from current arrangements]
+- **Real Estate Interests:** [Developers, landlords, property management companies]
+- **Professional Networks:** [Industry associations, consulting firms involved]
+- **Financial Interests:** [Banks, investors, bond holders]
+
+### State and Federal Influences
+- **Illinois State Government:** [State agencies and officials with authority]
+- **Federal Policy Connections:** [Federal programs and oversight affecting this]
+- **Regional Coordination:** [Cook County and metropolitan area influences]
+
+## COMMUNITY POWER ANALYSIS
+
+### Most Affected Communities (Based on Data Patterns)
+- **Primary Impact Neighborhoods:** [Areas with highest concentrations of issues]
+- **Community Assets:** [Organizations, leaders, resources in these areas]
+- **Existing Organizing:** [Current campaigns and organizations working on this]
+- **Cross-Neighborhood Connections:** [How issues connect across areas]
+
+### Current Community Representation
+- **Aldermanic Representation:** [How responsive are aldermen in affected areas]
+- **Community Board Participation:** [Relevant community boards and participation]
+- **Advocacy Organization Landscape:** [Groups claiming to represent community]
+- **Grassroots vs. Nonprofit Organizing:** [Community-controlled vs. external advocacy]
+
+## POWER RELATIONSHIPS AND PRESSURE POINTS
+
+### Decision-Making Processes
+- **Budget Cycle Influence Points:** [When and how budget decisions are made]
+- **Policy Development Process:** [How policies are created and can be influenced]
+- **Regulatory Authority:** [Which agencies have enforcement power]
+- **Public Input Mechanisms:** [Official channels for community influence]
+
+### Electoral Vulnerabilities
+- **Upcoming Elections:** [Relevant 2024/2025 elections to target]
+- **Aldermanic Accountability:** [Which aldermen are vulnerable to community pressure]
+- **Mayoral Position:** [How Johnson administration can be influenced]
+- **Coalition Electoral Power:** [Cross-ward organizing for electoral influence]
+
+### Economic Pressure Points
+- **Budget Dependencies:** [Revenue sources that can be affected by organizing]
+- **Corporate Contracts:** [City contracts that can be leveraged]
+- **Development Projects:** [Major projects that create organizing opportunities]
+- **Federal Funding:** [Federal money that can be influenced]
+
+### Legal and Regulatory Leverage
+- **Policy Violations:** [Where current practices violate stated policies]
+- **Federal Oversight:** [Federal agencies with jurisdiction]
+- **Legal Challenge Opportunities:** [Potential litigation pressure points]
+- **Transparency and Records:** [Public records and sunshine laws to use]
+
+## ORGANIZING STRATEGY RECOMMENDATIONS
+
+### Coalition Building Strategy
+- **Cross-Neighborhood Organizing:** [How to connect affected areas]
+- **Issue-Based Coalitions:** [Existing coalitions to join or build]
+- **Cross-Racial Organizing:** [Building solidarity across communities]
+- **Labor and Community Partnerships:** [Union and worker connections]
+
+### Policy and Electoral Strategy
+- **City Council Strategy:** [Which aldermen to target for support/pressure]
+- **Committee Strategy:** [Key city council committees to influence]
+- **Administrative Strategy:** [Department and agency targets]
+- **2024/2025 Electoral Strategy:** [Elections and candidates to focus on]
+
+### Media and Public Pressure
+- **Data-Driven Media Strategy:** [How to use data for media advocacy]
+- **Community Testimony:** [Residents sharing experiences publicly]
+- **Social Media Campaigns:** [Digital organizing around data patterns]
+- **Public Event Strategy:** [City council meetings, public hearings, protests]
+
+### Community Power Building
+- **Leadership Development:** [Training organizers in affected areas]
+- **Community Research:** [Building resident capacity for data analysis]
+- **Alternative Institution Building:** [Community-controlled solutions to develop]
+- **Long-Term Infrastructure:** [Sustained organizing capacity to build]
+
+## TACTICAL POWER ANALYSIS
+
+### Immediate Leverage (Next 30 days)
+- **Budget Hearings:** [Upcoming opportunities to influence spending]
+- **Public Meetings:** [Scheduled meetings where community can provide input]
+- **Media Opportunities:** [News cycles and events to leverage]
+- **Administrative Deadlines:** [Policy or program deadlines to target]
+
+### Medium-Term Power Building (3-6 months)
+- **Campaign Launches:** [Organizing campaigns to begin]
+- **Coalition Formalization:** [Formal coalitions to establish]
+- **Electoral Preparation:** [Candidate recruitment and voter registration]
+- **Policy Development:** [Community-authored policy proposals to develop]
+
+### Long-Term Systematic Change (6+ months)
+- **Electoral Strategy:** [Candidates and ballot measures to support]
+- **Alternative Institution Building:** [Community-controlled programs to create]
+- **Regional Organizing:** [Metropolitan and state-level organizing]
+- **National Movement Connections:** [How this connects to national organizing]
+
+## CHICAGO-SPECIFIC TACTICAL CONSIDERATIONS
+
+### Aldermanic System Navigation
+- **Ward-Level Organizing:** [How to build power within ward system]
+- **Cross-Ward Coalition Building:** [Overcoming ward-based political fragmentation]
+- **Aldermanic Accountability:** [Specific tactics for aldermanic pressure]
+
+### City Budget Process
+- **Budget Timeline:** [Key dates and opportunities for influence]
+- **Community Budget Advocacy:** [How to influence spending priorities]
+- **TIF and Development:** [Tax increment financing organizing opportunities]
+
+### Community Board Strategy
+- **Relevant Boards and Commissions:** [Which community boards affect this issue]
+- **Board Appointment Strategy:** [How to influence board membership]
+- **Board Advocacy Tactics:** [How to effectively influence board decisions]
+
+## SUCCESS METRICS AND ACCOUNTABILITY
+
+### Short-Term Wins (Next 3 months)
+- [Specific, measurable goals achievable quickly]
+
+### Power Building Indicators (6 months)
+- [How to measure growing community power and organizing capacity]
+
+### Systematic Change Measures (1+ year)
+- [How to measure fundamental system transformation]
+
+## CONCLUSION: From Power Analysis to Community Power
+
+**Key Power Insight:** [Most important power relationship revealed by data]
+
+**Primary Organizing Opportunity:** [Biggest opportunity for community power building]
+
+**Immediate Next Steps:** [Three specific actions to take this week]
+
+This power map should help Chicago organizers understand exactly who has power, how to pressure them, and how to build community power for lasting change.
+"""
+
+def call_claude_api(prompt: str, max_retries: int = 3) -> Optional[str]:
+    """Send prompt to Claude API with retry logic"""
+    for attempt in range(max_retries):
+        try:
+            message = client.messages.create(
+                model="claude-3-5-haiku-20241022",
+                max_tokens=4000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            time.sleep(1.5)  # Rate limiting
+            return message.content[0].text
+        except Exception as e:
+            logger.error(f"Claude API error (attempt {attempt + 1}): {e}")
+            if attempt < max_retries - 1:
+                time.sleep(5)
+            else:
+                return None
+
+def save_content(content: str, content_type: str, dataset_name: str):
+    """Save generated content to appropriate folder"""
+    if not content:
+        return
+    
+    os.makedirs(f'drafts/{content_type}', exist_ok=True)
+    
+    date_str = datetime.now().strftime('%Y%m%d')
+    filename = f'drafts/{content_type}/{date_str}-chicago-{dataset_name}.md'
+    
+    with open(filename, 'w', encoding='utf-8') as f:
+        f.write(content)
+    
+    logger.info(f"✅ Saved: {filename}")
+
+def main():
+    """Main content generation function using Chicago open data"""
+    logger.info("🚀 Starting Chicago Open Data Dignity Lens content generation...")
+    
+    analyzer = ChicagoDataAnalyzer()
+    
+    # Priority datasets for analysis
+    priority_datasets = [
+        'police_incidents',
+        'building_violations', 
+        'school_performance',
+        'public_health',
+        'business_licenses',
+        'affordable_housing'
+    ]
+    
+    processed_count = 0
+    
+    for dataset_key in priority_datasets:
+        logger.info(f"\n📊 Processing {dataset_key}...")
+        
+        try:
+            # Fetch dataset
+            data = analyzer.fetch_dataset(dataset_key, limit=1000)
+            if not data:
+                logger.warning(f"No data retrieved for {dataset_key}")
+                continue
+            
+            # Analyze for systematic patterns
+            analysis = analyzer.analyze_racial_disparities(data, dataset_key)
+            logger.info(f"✅ Analysis complete for {dataset_key}")
+            
+            # Generate Dignity Lens analysis
+            logger.info("🧠 Generating Dignity Lens analysis...")
+            analysis_prompt = create_data_analysis_prompt(analysis, dataset_key)
+            dignity_analysis = call_claude_api(analysis_prompt)
+            save_content(dignity_analysis, 'chicago-data-analysis', dataset_key)
+            
+            # Generate power mapping
+            logger.info("🗺️ Generating power mapping analysis...")
+            power_prompt = create_power_mapping_prompt(analysis, dataset_key)
+            power_mapping = call_claude_api(power_prompt)
+            save_content(power_mapping, 'chicago-power-mapping', dataset_key)
+            
+            # Save raw analysis data
+            analysis_filename = f'drafts/raw-data-analysis/{datetime.now().strftime("%Y%m%d")}-{dataset_key}-analysis.json'
+            os.makedirs('drafts/raw-data-analysis', exist_ok=True)
+            with open(analysis_filename, 'w', encoding='utf-8') as f:
+                json.dump(analysis, f, indent=2, default=str)
+            logger.info(f"💾 Saved raw analysis: {analysis_filename}")
+            
+            processed_count += 1
+            logger.info(f"✅ Completed {dataset_key} analysis")
+            
+        except Exception as e:
+            logger.error(f"Error processing {dataset_key}: {e}")
+            continue
+    
+    logger.info(f"\n🎉 Chicago data analysis complete! Processed {processed_count} datasets.")
+    logger.info("📁 Generated content saved to:")
+    logger.info("  - drafts/chicago-data-analysis/ (Dignity Lens analyses)")
+    logger.info("  - drafts/chicago-power-mapping/ (Power mapping for organizing)")
+    logger.info("  - drafts/raw-data-analysis/ (Raw data analysis JSON)")
+    logger.info("\n🏙️ Ready to transform Chicago data into community organizing power!")
+
+if __name__ == "__main__":
+    main()
+
+
+class ChicagoDataDashboard:
+    """Create a simple dashboard for Chicago data insights"""
+    
+    def __init__(self, analyzer: ChicagoDataAnalyzer):
+        self.analyzer = analyzer
+    
+    def generate_weekly_report(self) -> str:
+        """Generate weekly report of systematic patterns across all datasets"""
+        report_data = {}
+        
+        for dataset_key in self.analyzer.CHICAGO_DATA_ENDPOINTS.keys():
+            try:
+                data = self.analyzer.fetch_dataset(dataset_key, limit=500)
+                if data:
+                    analysis = self.analyzer.analyze_racial_disparities(data, dataset_key)
+                    report_data[dataset_key] = analysis
+            except Exception as e:
+                logger.error(f"Error in weekly report for {dataset_key}: {e}")
+        
+        # Generate comprehensive report
+        report_prompt = f"""
+You are DignityAI generating a WEEKLY CHICAGO SYSTEMATIC RACISM REPORT.
+
+MULTI-DATASET ANALYSIS:
+{json.dumps(report_data, indent=2, default=str)}
+
+Create a comprehensive weekly report (800-1000 words) that reveals systematic patterns across all Chicago datasets:
+
+# WEEKLY CHICAGO SYSTEMATIC RACISM REPORT
+## {datetime.now().strftime('%B %d, %Y')}
+
+### Executive Summary: Cross-System Patterns This Week
+
+### KEY SYSTEMATIC PATTERNS IDENTIFIED
+
+#### Geographic Targeting Patterns
+[Which neighborhoods are systematically targeted across multiple systems]
+
+#### Resource Allocation Disparities  
+[How city resources are allocated unequally across datasets]
+
+#### Enforcement Pattern Variations
+[How different city departments target the same communities]
+
+#### Cross-System Control Mechanisms
+[How different systems work together to contain communities]
+
+### DIGNITY LENS CROSS-ANALYSIS
+
+#### Power Structures (Cross-Department Coordination)
+[How different city departments coordinate systematic oppression]
+
+#### Control Mechanisms (Multi-System Targeting)
+[How communities face targeting across police, housing, health, education]
+
+#### Community Resistance (Cross-Issue Organizing Opportunities)  
+[Opportunities for communities to organize across multiple issues]
+
+#### Liberation Strategies (Comprehensive Community Power)
+[How communities can build power across multiple systems simultaneously]
+
+### ORGANIZING INTELLIGENCE
+
+#### Most Vulnerable Communities (Data-Driven Identification)
+[Which communities face systematic targeting across multiple datasets]
+
+#### Cross-Issue Coalition Opportunities
+[How communities can organize across housing, policing, health, education simultaneously]
+
+#### City Budget and Policy Connections
+[How city budget and policy decisions affect multiple systems]
+
+#### Electoral and Political Opportunities
+[How current political landscape affects systematic patterns]
+
+### THIS WEEK'S ORGANIZING OPPORTUNITIES
+
+#### Immediate Actions (Next 7 days)
+[Specific organizing actions communities can take this week]
+
+#### Policy Intervention Points
+[Upcoming policy decisions communities can influence]
+
+#### Community Coalition Building
+[Cross-neighborhood organizing opportunities identified this week]
+
+### LONG-TERM PATTERN TRACKING
+
+#### Systematic Trends Over Time
+[How patterns are changing week to week]
+
+#### Community Resistance Effectiveness
+[How community organizing is affecting systematic patterns]
+
+#### Power Structure Adaptations
+[How city systems are adapting to community resistance]
+
+### CONCLUSION: From Data to Community Liberation
+[How this week's data can inform community organizing strategy]
+
+This report should help Chicago organizers see systematic patterns across multiple city systems and coordinate comprehensive resistance.
+"""
+        
+        weekly_report = call_claude_api(report_prompt)
+        
+        # Save weekly report
+        date_str = datetime.now().strftime('%Y%m%d')
+        filename = f'drafts/weekly-reports/chicago-systematic-racism-report-{date_str}.md'
+        os.makedirs('drafts/weekly-reports', exist_ok=True)
+        
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(weekly_report)
+        
+        logger.info(f"📊 Weekly report saved: {filename}")
+        return weekly_report
+
+    def generate_organizing_alerts(self) -> List[str]:
+        """Generate alerts for immediate organizing opportunities"""
+        alerts = []
+        
+        # Check for budget hearings, city council meetings, etc.
+        # This would integrate with Chicago's calendar APIs
+        alerts.append("🚨 City Council Budget Committee meets Thursday - opportunity to address systematic resource allocation")
+        alerts.append("⚡ New police incident data shows increased targeting in Austin neighborhood - organizing opportunity")
+        alerts.append("🏠 Building violations spike in Englewood - tenant organizing opportunity")
+        
+        return alerts
+
+def create_community_research_prompt(analysis_results: Dict) -> str:
+    """Create prompt for community research methodology"""
+    return f"""
+You are DignityAI helping communities develop COMMUNITY-CONTROLLED RESEARCH capacity.
+
+CHICAGO DATA ANALYSIS RESULTS:
+{json.dumps(analysis_results, indent=2, default=str)}
+
+Create a COMMUNITY RESEARCH GUIDE (600-800 words) that teaches communities how to use Chicago open data for organizing:
+
+# COMMUNITY DATA ORGANIZING GUIDE
+## How to Use Chicago Open Data for Liberation
+
+### Why Community-Controlled Data Matters
+[Why communities should control their own research and analysis]
+
+### Getting Started with Chicago Open Data
+#### Essential Datasets for Community Organizing
+[Which datasets are most useful for organizing]
+
+#### Reading the Data Like an Organizer
+[How to analyze data for power and organizing opportunities]
+
+#### Tools Communities Can Use
+[Free tools and resources for community data analysis]
+
+### Community Research Methodology
+#### Asking the Right Questions
+[How to approach data from community organizing perspective]
+
+#### Identifying Power and Targeting Patterns
+[How to see systematic oppression in government data]
+
+#### Connecting Data to Community Experience
+[How to validate data analysis with lived experience]
+
+### Using Data for Organizing
+#### Data-Driven Community Education
+[How to use data for political education and consciousness-raising]
+
+#### Evidence-Based Advocacy
+[How to use data for policy advocacy and aldermanic pressure]
+
+#### Coalition Building with Data
+[How data can help build cross-neighborhood coalitions]
+
+#### Media and Public Education
+[How to use data for media advocacy and public education]
+
+### Community Data Justice
+#### Challenging Official Narratives
+[How to use data to counter government and media narratives]
+
+#### Demanding Data Transparency
+[How to request additional data and transparency from city]
+
+#### Community-Controlled Research
+[How to do community-controlled research using open data]
+
+### Data Security and Protection
+#### Protecting Community Information
+[How to use data safely without exposing community members]
+
+#### Digital Security for Organizers
+[Basic digital security when using government data for organizing]
+
+### Advanced Community Research
+#### Cross-Dataset Analysis
+[How to analyze multiple datasets together for systematic patterns]
+
+#### Historical Trend Analysis
+[How to track systematic oppression patterns over time]
+
+#### Predictive Organizing
+[How to anticipate where systematic targeting will happen next]
+
+### Building Community Research Capacity
+#### Training Community Researchers
+[How to build community capacity for ongoing data analysis]
+
+#### Community Research Infrastructure
+[What tools and systems communities need for sustained research]
+
+#### Connecting to Academic and Technical Support
+[How to get technical assistance while maintaining community control]
+
+### From Data to Power: Making Research Organizing
+[How community research builds community power for liberation]
+
+This guide should help communities move from consuming government data to controlling their own research for organizing.
+"""
+
+def setup_chicago_organizing_integration():
+    """Set up integration with Chicago organizing infrastructure"""
+    
+    # Community organization contacts for different issues
+    CHICAGO_ORGANIZING_CONTACTS = {
+        'police_accountability': [
+            'Black Lives Matter Chicago',
+            'Organized Communities Against Deportations',
+            'Chicago Alliance Against Racist and Political Repression'
+        ],
+        'housing_justice': [
+            'Kenwood Oakland Community Organization (KOCO)',
+            'Pilsen Alliance',
+            'Logan Square Neighborhood Association'
+        ],
+        'education_justice': [
+            'Journey for Justice Alliance',
+            'Voices of Youth in Chicago Education (VOYCE)',
+            'Chicago Teachers Union'
+        ],
+        'healthcare_justice': [
+            'Chicago Department of Public Health Community Advisory Board',
+            'National Nurses United',
+            'Treatment Not Jail Coalition'
+        ],
+        'economic_justice': [
+            'Raise the Wage Coalition',
+            'Jobs with Justice Chicago',
+            'ONE Northside'
+        ]
+    }
+    
+    return CHICAGO_ORGANIZING_CONTACTS
+
+def generate_organizing_referrals(analysis: Dict, dataset_key: str) -> List[str]:
+    """Generate referrals to relevant Chicago organizing groups"""
+    contacts = setup_chicago_organizing_integration()
+    
+    referrals = []
+    
+    if dataset_key == 'police_incidents':
+        referrals.extend(contacts['police_accountability'])
+    elif dataset_key in ['building_violations', 'affordable_housing']:
+        referrals.extend(contacts['housing_justice'])
+    elif dataset_key == 'school_performance':
+        referrals.extend(contacts['education_justice'])
+    elif dataset_key == 'public_health':
+        referrals.extend(contacts['healthcare_justice'])
+    elif dataset_key == 'business_licenses':
+        referrals.extend(contacts['economic_justice'])
+    
+    return referrals
+
+# Additional utility functions for enhanced functionality
+
+def create_aldermanic_pressure_prompt(analysis: Dict, dataset_key: str) -> str:
+    """Create specific aldermanic pressure campaign prompts"""
+    return f"""
+You are DignityAI creating ALDERMANIC PRESSURE CAMPAIGN strategy for Chicago organizers.
+
+DATASET: {dataset_key}
+ANALYSIS: {json.dumps(analysis.get('geographic_distribution', {}), indent=2)}
+
+Create an aldermanic pressure campaign strategy (500-600 words):
+
+# ALDERMANIC PRESSURE CAMPAIGN: {dataset_key.replace('_', ' ').title()}
+
+## Ward-Level Targeting Strategy
+[Which wards show highest concentrations of problems and organizing opportunities]
+
+## Aldermanic Accountability Research
+[Which aldermen should be pressured based on data patterns in their wards]
+
+## Community Testimony Strategy
+[How residents can use this data to testify at city council meetings]
+
+## Coalition Building Across Wards
+[How to organize across ward boundaries around shared data patterns]
+
+## Policy Demands and Solutions
+[Specific policy changes to demand from aldermen based on data]
+
+## Tactical Timeline
+[When to pressure aldermen for maximum effectiveness]
+
+Focus on specific, actionable aldermanic pressure tactics that use data evidence.
+"""
+
+def create_budget_advocacy_prompt(analysis: Dict, dataset_key: str) -> str:
+    """Create budget advocacy strategy based on data patterns"""
+    return f"""
+You are DignityAI creating CHICAGO BUDGET ADVOCACY strategy.
+
+DATASET: {dataset_key}
+ANALYSIS: {json.dumps(analysis, indent=2, default=str)}
+
+Create a budget advocacy strategy (400-500 words):
+
+# BUDGET ADVOCACY STRATEGY: {dataset_key.replace('_', ' ').title()}
+
+## Budget Analysis
+[How current city budget allocations relate to problems shown in data]
+
+## Reallocation Demands
+[Specific budget shifts to demand based on data patterns]
+
+## Community Budget Priorities
+[What communities should advocate for in next budget cycle]
+
+## Budget Timeline and Opportunities
+[When communities can influence budget decisions]
+
+## Coalition Budget Strategy
+[How communities can coordinate budget advocacy across issues]
+
+Focus on specific, winnable budget advocacy that addresses root causes revealed in data.
+"""
+
+# Integration with existing content generation workflow
+def enhanced_main():
+    """Enhanced main function with additional organizing tools"""
+    logger.info("🚀 Starting Enhanced Chicago Open Data Analysis with Organizing Integration...")
+    
+    analyzer = ChicagoDataAnalyzer()
+    dashboard = ChicagoDataDashboard(analyzer)
+    
+    # Generate weekly comprehensive report
+    logger.info("📊 Generating weekly systematic racism report...")
+    weekly_report = dashboard.generate_weekly_report()
+    
+    # Generate organizing alerts
+    logger.info("⚡ Generating organizing alerts...")
+    alerts = dashboard.generate_organizing_alerts()
+    for alert in alerts:
+        logger.info(f"  {alert}")
+    
+    # Run standard analysis
+    main()
+    
+    # Generate additional organizing tools
+    logger.info("🛠️ Generating additional organizing tools...")
+    
+    # Create community research guide
+    sample_analysis = {"example": "data for research guide"}
+    research_prompt = create_community_research_prompt(sample_analysis)
+    research_guide = call_claude_api(research_prompt)
+    save_content(research_guide, 'community-research-guides', 'chicago-open-data')
+    
+    logger.info("🎉 Enhanced Chicago data analysis complete with organizing integration!")
+
+if __name__ == "__main__":
+    # Run enhanced version with organizing integration
+    enhanced_main()
