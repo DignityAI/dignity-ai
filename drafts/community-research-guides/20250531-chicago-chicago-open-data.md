@@ -3,114 +3,106 @@
 
 ### Why Community-Controlled Data Matters
 
-In a world where data often reinforces existing power structures, community-controlled research is a radical act of self-determination. Government and institutional data can become a powerful tool for liberation when communities learn to analyze, interpret, and strategically use information to challenge systemic oppression.
+Data is power. For too long, communities of color and working-class neighborhoods have been studied, analyzed, and controlled by outside institutions that do not understand or respect community experiences. Community-controlled research flips this script, transforming data from a tool of oppression into a weapon of liberation.
+
+In Chicago, open data provides a critical opportunity for communities to understand systemic inequalities, expose power structures, and develop strategic organizing approaches. By learning to read, analyze, and weaponize government data, communities can:
+- Expose racial and economic disparities
+- Challenge official narratives
+- Build evidence-based advocacy campaigns
+- Create targeted organizing strategies
 
 ### Getting Started with Chicago Open Data
 
-#### Essential Datasets for Community Organizing
-Key datasets for Chicago community organizers include:
-- Chicago Police Department incident reports
+#### Essential Datasets for Organizing
+Key datasets for community power analysis include:
+- Chicago Police Department arrest and use of force data
 - City budget allocations
-- Housing and development data
-- Economic investment and disinvestment maps
-- School performance and funding data
-- Health and environmental justice indicators
+- Economic development investments
+- Housing and eviction records
+- School funding and performance data
+- 311 service request databases
 
 #### Reading the Data Like an Organizer
-Don't just read numbers - read power dynamics:
-- Look for patterns of resource allocation
-- Identify systematic disparities
-- Connect statistical trends to lived community experiences
-- Seek the stories behind the statistics
+
+Community data analysis isn't about academic neutrality—it's about understanding power. When examining datasets, ask:
+- Who is being targeted?
+- Where are resources being concentrated or withheld?
+- What systematic patterns emerge?
+- How do these numbers connect to community experiences?
 
 #### Tools Communities Can Use
-Free community research tools:
-- Chicago Data Portal
-- QGIS (mapping software)
-- R and Python (data analysis)
-- OpenRefine (data cleaning)
-- Tableau Public (visualization)
+Free tools for community data analysis:
+- Chicago Data Portal (data.cityofchicago.org)
+- Google Sheets
+- Tableau Public
+- R (statistical programming language)
+- Python data analysis libraries
 
 ### Community Research Methodology
 
 #### Asking the Right Questions
-Community-centered research asks:
-- Who benefits from these data patterns?
-- What systems of power are revealed?
-- How can this information support community struggle?
-- What solutions emerge from the data?
+Community research starts with community knowledge. Before diving into datasets, gather:
+- Neighborhood oral histories
+- Community listening sessions
+- Personal testimonies
+- Collective experiences of oppression
+
+These lived experiences will guide your data analysis and ensure the research serves community needs.
 
 #### Identifying Power and Targeting Patterns
-Systematic oppression leaves digital traces. Look for:
-- Racial disparities in arrests
-- Unequal municipal service delivery
-- Concentrated economic disinvestment
-- Patterns of surveillance and policing
+
+Look beyond individual data points to see systematic oppression:
+- Compare resources across neighborhoods
+- Track racial disparities in arrests, investments, services
+- Identify consistent patterns of institutional violence
+- Connect numerical data to community stories
 
 #### Connecting Data to Community Experience
-Always validate data analysis through:
-- Community listening sessions
-- Oral histories
-- Collective interpretation workshops
-- Cross-referencing with community knowledge
+
+Data is most powerful when validated by community knowledge. Always:
+- Cross-reference datasets with community narratives
+- Host community interpretation sessions
+- Allow impacted people to analyze and contextualize findings
+- Center community voice in research presentation
 
 ### Using Data for Organizing
 
 #### Data-Driven Community Education
-Transform raw data into:
+Transform complex datasets into:
 - Infographics
-- Popular education materials
 - Community presentations
-- Social media content
+- Know-Your-Rights workshops
+- Popular education materials
 
 #### Evidence-Based Advocacy
 Use data to:
-- Challenge discriminatory policies
-- Demand budget transparency
-- Support policy proposals
-- Pressure elected officials
-
-#### Coalition Building with Data
-Data can reveal shared struggles across:
-- Neighborhoods
-- Different marginalized communities
-- Intersectional movement building
-
-### Community Data Justice
-
-#### Challenging Official Narratives
-- Expose gaps in official reporting
-- Highlight suppressed information
-- Create counter-narratives
-- Democratize knowledge production
-
-#### Demanding Data Transparency
-- File Freedom of Information Act (FOIA) requests
-- Push for more comprehensive public data
-- Build mechanisms for community data oversight
+- Pressure aldermen
+- Develop policy proposals
+- Challenge institutional practices
+- Build legal cases
 
 ### Data Security and Protection
 
 #### Protecting Community Information
 - Anonymize individual data
 - Use aggregate statistics
+- Obtain informed consent
 - Protect vulnerable community members
-- Establish ethical data handling protocols
 
 ### Building Community Research Capacity
 
-#### Training Community Researchers
-- Create ongoing training programs
-- Develop intergenerational knowledge transfer
-- Build technical skills within community
-- Democratize data literacy
+The ultimate goal is not just analysis, but building sustained community research infrastructure. This means:
+- Training multiple community researchers
+- Developing collaborative research processes
+- Creating systems for ongoing data collection
+- Connecting research to direct action
 
-### From Data to Power
+### From Data to Power: Making Research Organizing
 
-Community research is not just about understanding the world, but transforming it. By developing autonomous research capacity, communities can:
-- Diagnose systemic problems
-- Design strategic interventions
-- Build collective power
-- Imagine and create liberatory futures
+Community-controlled research is a revolutionary act. By transforming government data into a tool for liberation, communities can:
+- Expose systemic oppression
+- Build collective consciousness
+- Create strategic organizing campaigns
+- Reclaim narrative power
 
-This guide is a blueprint for turning data into a weapon of collective liberation.
+Remember: Data is a weapon. Aim carefully.

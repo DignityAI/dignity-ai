@@ -1,0 +1,47 @@
+{
+  "endpoint": "city_budget",
+  "total_records": 1000,
+  "date_range": {
+    "note": "No date columns found"
+  },
+  "geographic_distribution": {
+    "note": "No geographic columns found"
+  },
+  "systematic_patterns": {
+    "data_quality": {
+      "missing_values": {
+        "year": 0,
+        "leading_cause": 0,
+        "sex": 0,
+        "race_ethnicity": 0,
+        "deaths": 0,
+        "death_rate": 0,
+        "age_adjusted_death_rate": 0
+      },
+      "duplicate_records": "0"
+    }
+  },
+  "dignity_lens_application": {
+    "dignity_focus_area": "Government Systems & Political Exclusion",
+    "power_structures_revealed": [
+      "NYC government agencies",
+      "Community stakeholders"
+    ],
+    "control_mechanisms_shown": [
+      "Administrative barriers",
+      "Resource allocation patterns"
+    ],
+    "community_resistance_opportunities": [
+      "Community data analysis and advocacy",
+      "Public records requests for transparency",
+      "Community organizing around patterns revealed",
+      "Policy advocacy based on data evidence",
+      "Coalition building across affected boroughs"
+    ],
+    "liberation_strategies_suggested": [
+      "Community-controlled alternatives",
+      "Policy advocacy",
+      "Organizing infrastructure"
+    ]
+  }
+}

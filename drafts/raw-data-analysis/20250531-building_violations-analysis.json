@@ -1,0 +1,79 @@
+{
+  "endpoint": "building_violations",
+  "total_records": 1000,
+  "date_range": {
+    "start_date": "1970-04-23",
+    "end_date": "1988-12-30",
+    "date_column": "issue_date"
+  },
+  "geographic_distribution": {
+    "primary_geographic_field": "boro",
+    "distribution": {
+      "1": 996,
+      "5": 2,
+      "3": 2
+    },
+    "most_affected_areas": [
+      "1",
+      "5",
+      "3"
+    ],
+    "total_areas": 3
+  },
+  "systematic_patterns": {
+    "data_quality": {
+      "missing_values": {
+        "isn_dob_bis_viol": 0,
+        "boro": 0,
+        "block": 2,
+        "lot": 2,
+        "issue_date": 2,
+        "violation_type_code": 0,
+        "violation_number": 1,
+        "house_number": 0,
+        "street": 0,
+        "disposition_comments": 513,
+        "device_number": 157,
+        "description": 294,
+        "number": 0,
+        "violation_category": 0,
+        "violation_type": 0,
+        "bin": 2,
+        "disposition_date": 30
+      },
+      "duplicate_records": "0"
+    },
+    "housing_patterns": {
+      "violation_types": {
+        "V*-DOB VIOLATION - Resolved": 860,
+        "V*-DOB VIOLATION - DISMISSED": 111,
+        "V-DOB VIOLATION - ACTIVE": 29
+      }
+    }
+  },
+  "dignity_lens_application": {
+    "dignity_focus_area": "Housing & Community Development",
+    "power_structures_revealed": [
+      "NYC Department of Buildings",
+      "Property Owners/Landlords",
+      "Borough Presidents"
+    ],
+    "control_mechanisms_shown": [
+      "Unequal code enforcement",
+      "Delayed repairs in certain neighborhoods",
+      "Displacement through violation"
+    ],
+    "community_resistance_opportunities": [
+      "Community data analysis and advocacy",
+      "Public records requests for transparency",
+      "Community organizing around patterns revealed",
+      "Policy advocacy based on data evidence",
+      "Coalition building across affected boroughs"
+    ],
+    "liberation_strategies_suggested": [
+      "Tenant organizing",
+      "Community land trusts",
+      "Housing preservation ordinances"
+    ]
+  }
+}
