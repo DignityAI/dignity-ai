@@ -14,6 +14,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history
     
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -35,13 +37,23 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         
-        # Add all changes
-        git add .
+        # Add generated files FIRST
+        git add drafts/
         
-        # Check if there are changes
+        # Check if there are changes to commit
         if ! git diff --staged --quiet; then
+          # Now pull latest changes (after staging our changes)
+          git pull origin main --rebase || {
+            echo "Rebase failed, trying merge strategy"
+            git rebase --abort
+            git pull origin main --no-rebase
+          }
+          
+          # Commit our changes
           git commit -m "Daily content generation: $(date +%Y-%m-%d)"
-          git push
+          
+          # Push changes
+          git push origin main
         else
           echo "No changes to commit"
         fi
