@@ -2,3 +2,4 @@ anthropic
 feedparser
 requests
 beautifulsoup4
+pandas
