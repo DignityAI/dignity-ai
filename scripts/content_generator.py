@@ -9,11 +9,9 @@ from anthropic import Anthropic
 import time
 import re
 from urllib.parse import urljoin, urlparse
-from knowledge_accumulation import LiberationKnowledgeSystem, extract_location_from_article, extract_domain_from_article, extract_themes_from_article
 
-# Initialize Claude API and Knowledge System
+# Initialize Claude API
 client = Anthropic(api_key=os.environ['CLAUDE_API_KEY'])
-knowledge_system = LiberationKnowledgeSystem()
 
 # RSS Feeds to monitor
 RSS_FEEDS = [
@@ -107,54 +105,6 @@ def fetch_full_article_content(url):
         print(f"Error fetching full content from {url}: {e}")
         return None
 
-def fact_check_content(article):
-    """
-    Fact-check article content for accuracy and context
-    """
-    fact_check_prompt = f"""
-FACT-CHECK ASSESSMENT for Dignity Lens Analysis:
-
-ARTICLE: {article['title']}
-URL: {article['url']}
-CONTENT: {article['content'][:2000]}...
-
-Please evaluate this content for:
-
-1. FACTUAL ACCURACY:
-- Are claims supported by evidence?
-- Are statistics/data presented correctly?
-- Are quotes and attributions accurate?
-- Any obvious misinformation or bias?
-
-2. CONTEXT COMPLETENESS:
-- Missing important background information?
-- One-sided presentation of complex issues?
-- Historical context provided or absent?
-- Community perspectives included or excluded?
-
-3. SOURCE RELIABILITY:
-- Credible publication/outlet?
-- Author expertise on the topic?
-- Primary sources vs. speculation?
-- Corporate/political interests that might bias coverage?
-
-4. SYSTEMATIC ANALYSIS READINESS:
-- Sufficient detail for institutional analysis?
-- Connects to broader patterns beyond individual incident?
-- Relates to community organizing or policy implications?
-- Addresses root causes vs. just symptoms?
-
-RESPOND WITH:
-- FACT_CHECK_PASS: Content is factually sound and suitable for Dignity Lens analysis
-- FACT_CHECK_CONCERNS: Content has issues but may still be usable (explain concerns)
-- FACT_CHECK_FAIL: Content is unreliable or insufficient for serious analysis
-
-If PASS or CONCERNS, provide brief summary of any important context or background information that should be included in the analysis.
-
-If FAIL, explain specific factual problems or missing context that makes this unsuitable for systematic racism analysis.
-"""
-    return fact_check_prompt
-
 def assess_content_quality(article):
     """Determine if article has sufficient context for Dignity Lens analysis"""
     if not article or not article.get('content'):
@@ -218,45 +168,16 @@ def filter_relevant_articles(articles):
     
     return relevant
 
-def create_enhanced_case_study_prompt(article, fact_check_result=None):
-    """Create enhanced prompt for Dignity Lens case study with accumulated knowledge context"""
-    
-    # Get accumulated knowledge context
-    location = extract_location_from_article(article)
-    domain = extract_domain_from_article(article) 
-    themes = extract_themes_from_article(article)
-    
-    context = knowledge_system.get_relevant_context(location, domain, themes)
-    
-    # Build context section
-    knowledge_context = ""
-    if context['power_structures']:
-        knowledge_context += f"\n\nKNOWN POWER STRUCTURES in {location or 'this region'}:\n"
-        for ps in context['power_structures']:
-            knowledge_context += f"- Key Actors: {', '.join(ps.get('key_actors', [])[:5])}\n"
-            knowledge_context += f"- Institutions: {', '.join(ps.get('institutions', [])[:5])}\n"
-            knowledge_context += f"- Control Mechanisms: {', '.join(ps.get('control_mechanisms', [])[:5])}\n"
-    
-    if context['organizing_strategies']:
-        knowledge_context += f"\n\nPROVEN ORGANIZING STRATEGIES from our knowledge base:\n"
-        for strategy in context['organizing_strategies'][:10]:
-            knowledge_context += f"- {strategy.get('name', 'Unknown')}\n"
-    
-    if context['similar_cases']:
-        knowledge_context += f"\n\nSIMILAR CASES in our database:\n"
-        for case in context['similar_cases'][:5]:
-            knowledge_context += f"- {case.get('title', 'Unknown')} ({case.get('city', 'Unknown city')})\n"
-    
-    fact_check_context = ""
-    if fact_check_result and "FACT_CHECK_PASS" in fact_check_result:
-        fact_check_context = f"\n\nFACT-CHECK CLEARED: This content has been verified for accuracy and systematic analysis readiness.\n{fact_check_result}\n"
-    elif fact_check_result and "FACT_CHECK_CONCERNS" in fact_check_result:
-        fact_check_context = f"\n\nFACT-CHECK NOTES: Please address these concerns in your analysis:\n{fact_check_result}\n"
-    
+def create_enhanced_case_study_prompt(article):
+    """Create enhanced prompt for Dignity Lens case study with quality check"""
     return f"""
-You are DignityAI with access to accumulated institutional memory. Create TWO complementary case studies using the Dignity Lens framework.
-{fact_check_context}
-{knowledge_context}
+You are DignityAI. FIRST assess if this article contains sufficient information for meaningful Dignity Lens analysis.
+
+CONTENT ASSESSMENT CRITERIA:
+- Does this article provide enough context to identify specific Power Structures?
+- Can you trace systematic patterns rather than isolated incidents?
+- Is there enough information to document Community Resistance or organizing opportunities?
+- Can you identify concrete Liberation Strategies?
 
 ARTICLE TO ANALYZE:
 Title: {article['title']}
@@ -264,144 +185,103 @@ Content: {article['content']}
 Word Count: {article.get('word_count', 'Unknown')}
 Source: {article['url']}
 
-GENERATE TWO CASE STUDIES:
+IF THE ARTICLE LACKS SUFFICIENT CONTEXT (less than 300 words OR insufficient systematic analysis potential):
+Respond with exactly: "INSUFFICIENT_CONTEXT: This article requires additional research before applying the Dignity Lens framework. The content lacks sufficient detail about systematic patterns, community impact, or institutional context needed for meaningful analysis."
 
-## CASE STUDY A: LOCAL SYSTEMATIC ANALYSIS
-Focus specifically on the city/region mentioned in the article. Use the accumulated knowledge above to provide deeper context about known power structures and proven organizing strategies in this location.
+IF THE ARTICLE HAS SUFFICIENT CONTEXT:
+Create a comprehensive case study (1800-2200 words) using the Dignity Lens framework:
 
-## CASE STUDY B: NATIONAL COMPARATIVE ANALYSIS  
-Compare this local pattern to how the same systematic issue operates in other major cities. Reference similar cases from our knowledge base when relevant.
+DIGNITY LENS DOMAINS:
+1. Power Structures: Who holds decision-making authority and how is it maintained?
+2. Control Mechanisms: How are Black communities contained and suppressed?
+3. Community Resistance: How do communities survive and fight back?
+4. Liberation Strategies: What has actually worked to build Black freedom and power?
 
 Format as markdown with:
-
-# LOCAL CASE STUDY: [City Name] - [Issue]
+# [Analysis Title]
 ## Executive Summary
-## Institutional Memory Context
-[Reference relevant power structures and past organizing from our knowledge base]
-## Local Dignity Lens Analysis
-### Power Structures (City/County/State Level)
-### Control Mechanisms (How This Operates Locally)
-### Community Resistance (Local Organizing Examples)
-### Liberation Strategies (What's Worked in This City)
-## Local Organizing Opportunities
+## Dignity Lens Analysis
+### Power Structures
+### Control Mechanisms
+### Community Resistance
+### Liberation Strategies
+## Historical Context
+## Community Organizing Opportunities
 ## Conclusion
 
----
-
-# NATIONAL COMPARATIVE ANALYSIS: [Issue] Across U.S. Cities
-## Executive Summary
-## Cross-City Pattern Analysis
-[Reference similar cases from knowledge base]
-### How Power Structures Vary by Region
-### Control Mechanisms: Common Tactics vs. Local Variations
-### Community Resistance: Successful Models from Different Cities
-### Liberation Strategies: What's Replicable Nationwide
-## State-by-State Policy Comparisons
-## Federal Policy Connections
-## Cross-City Organizing Opportunities
-### Regional Coalition Building
-### National Movement Connections
-### Policy Advocacy at Multiple Levels
-## Knowledge Base Integration
-[How this case adds to our understanding of systematic patterns]
-## Conclusion
-
-Each case study should be 1000-1200 words. Use accumulated institutional memory to provide deeper analysis and more specific organizing recommendations based on proven strategies.
+Connect to historical patterns and provide concrete Chicago organizing opportunities.
+NEVER generate superficial analysis from incomplete information.
 """
 
-def create_news_article_prompt(article, fact_check_result=None):
-    """Create prompt for community journalism article with fact-check integration"""
-    fact_check_context = ""
-    if fact_check_result:
-        fact_check_context = f"\n\nFACT-CHECK NOTES: {fact_check_result}\n"
-    
+def create_news_article_prompt(article):
+    """Create prompt for community journalism article"""
     return f"""
-You are a Liberation Technology journalist for the People's Newsroom.
-{fact_check_context}
+You are a Liberation Technology journalist for the People's Newsroom. 
+
+FIRST: Assess if this article has enough substance for community journalism analysis.
+
 ARTICLE:
 Title: {article['title']}
 Content: {article['content']}
 Source: {article['url']}
 
-Rewrite from a MULTI-CITY LIBERATION ORGANIZING perspective (700-900 words):
-- Center community voices and impacts in the specific city/region
-- Analyze systematic patterns that operate across multiple cities
-- Connect local story to broader liberation organizing nationwide
-- Compare similar organizing strategies in Chicago, LA, Austin, Philadelphia, DC
-- Provide community organizing context that can be replicated
-- Include actionable information for residents locally and regionally
-- Address any fact-check concerns noted above
+IF insufficient context (less than 200 words OR lacks community impact details):
+Respond: "INSUFFICIENT_CONTENT: This article lacks sufficient detail for meaningful community journalism rewrite."
+
+IF sufficient context:
+Rewrite from a community organizing perspective (700-900 words):
+- Center community voices and impacts
+- Analyze systematic patterns, not just individual events
+- Connect to broader liberation organizing
+- Provide community organizing context
+- Include actionable information for residents
 
 Format as:
 # [Community-Centered Headline]
-## [Subheading focusing on systematic patterns across cities]
+## [Subheading focusing on community impact]
 
-[Article content with multi-city Liberation Technology perspective]
-
-**Fact-Check and Sources:**
-[Any additional context or verification needed]
+[Article content with Liberation Technology perspective]
 
 **Community Organizing Opportunities:**
-
-**Local Actions (City-Specific):**
-- [Actions for residents in this specific city]
-- [Local organizations to connect with]
-- [City council meetings, local campaigns]
-
-**Regional and National Connections:**
-- [How this connects to organizing in other cities]
-- [Cross-city coalitions and networks]
-- [Federal policy implications and actions]
+- [Specific actions residents can take]
+- [Organizations to connect with]
+- [Relevant meetings/events]
 """
 
-def create_blog_post_prompt(article, fact_check_result=None):
-    """Create prompt for accessible blog post with fact-check integration"""
-    fact_check_context = ""
-    if fact_check_result:
-        fact_check_context = f"\n\nFACT-CHECK NOTES: {fact_check_result}\n"
-    
+def create_blog_post_prompt(article):
+    """Create prompt for accessible blog post"""
     return f"""
 You are writing for DRC's blog to make systematic racism analysis accessible.
-{fact_check_context}
+
 ARTICLE:
 Title: {article['title']}
 Content: {article['content']}
 Source: {article['url']}
 
-Create an accessible blog post (500-700 words) that makes MULTI-CITY SYSTEMATIC PATTERNS accessible:
+IF insufficient context for systematic analysis:
+Respond: "INSUFFICIENT_CONTENT: This story lacks the detail needed for meaningful systematic racism analysis."
+
+IF sufficient context:
+Create an accessible blog post (500-700 words) that:
 - Makes systematic racism analysis accessible to general readers
 - Uses concrete examples from the news story
-- Connects individual story to patterns across Chicago, LA, Austin, Philadelphia, DC
-- Shows how the same systems operate in different cities
-- Provides hope and organizing pathways that can be replicated
-- Addresses any fact-check concerns
+- Connects individual story to bigger patterns
+- Provides hope and organizing pathways
 
 Format as:
-# [Engaging, accessible headline that shows broader pattern]
+# [Engaging, accessible headline]
 
 [Content explaining systematic patterns through this example]
 
 ## What This Really Means
-[Connect local story to systematic patterns across multiple cities]
-
-## The Full Context
-[Address any fact-check concerns or missing context]
-
-## How This Shows Up in Other Cities
-[Examples of similar patterns in LA, Chicago, Austin, Philadelphia, etc.]
+[Connect to bigger patterns]
 
 ## What We Can Do About It
-[Organizing opportunities locally and regionally]
+[Organizing opportunities and hope]
 
 **Get Involved:**
-
-**In Your City:**
-- [Local actions relevant to the city discussed]
-- [Local organizations to support]
-
-**Regional and National:**
-- [Cross-city organizing opportunities]
-- [National networks and coalitions]
+- [Specific actions]
+- [Organizations to support]
 """
 
 def call_claude_api(prompt, max_retries=3):
@@ -423,7 +303,7 @@ def call_claude_api(prompt, max_retries=3):
             else:
                 return None
 
-def save_content(content, content_type, article_title, is_dual_case_study=False):
+def save_content(content, content_type, article_title):
     """Save generated content to appropriate folder"""
     if not content:
         return
@@ -439,27 +319,6 @@ def save_content(content, content_type, article_title, is_dual_case_study=False)
     # Create filename
     date_str = datetime.now().strftime('%Y%m%d')
     safe_title = "".join(c for c in article_title if c.isalnum() or c in (' ', '-', '_')).rstrip()[:50]
-    
-    # For dual case studies, split and save separately
-    if is_dual_case_study and content_type == 'case-studies':
-        # Split the content on the separator
-        if '# NATIONAL COMPARATIVE ANALYSIS:' in content:
-            local_study, national_study = content.split('# NATIONAL COMPARATIVE ANALYSIS:', 1)
-            
-            # Save local case study
-            local_filename = f'drafts/{content_type}/{date_str}-LOCAL-{safe_title}.md'
-            with open(local_filename, 'w', encoding='utf-8') as f:
-                f.write(local_study.strip())
-            print(f"✅ Saved Local: {local_filename}")
-            
-            # Save national comparative study
-            national_filename = f'drafts/{content_type}/{date_str}-NATIONAL-{safe_title}.md'
-            with open(national_filename, 'w', encoding='utf-8') as f:
-                f.write('# NATIONAL COMPARATIVE ANALYSIS:' + national_study)
-            print(f"✅ Saved National: {national_filename}")
-            return
-    
-    # Regular single file save
     filename = f'drafts/{content_type}/{date_str}-{safe_title}.md'
     
     # Save content
@@ -469,8 +328,8 @@ def save_content(content, content_type, article_title, is_dual_case_study=False)
     print(f"✅ Saved: {filename}")
 
 def main():
-    """Main content generation function with fact-checking"""
-    print("🚀 Starting enhanced daily content generation with fact-checking...")
+    """Main content generation function"""
+    print("🚀 Starting enhanced daily content generation...")
     
     # Fetch and filter articles
     print("📰 Fetching RSS articles...")
@@ -482,7 +341,7 @@ def main():
     
     processed_count = 0
     
-    for i, article in enumerate(relevant_articles[:6]):  # Reduced for fact-checking overhead
+    for i, article in enumerate(relevant_articles[:8]):  # Limit to 8 for cost control
         print(f"\n📖 Processing article {i+1}: {article['title'][:60]}...")
         
         # Get full article content
@@ -502,53 +361,28 @@ def main():
         # Use full article for analysis
         enhanced_article = {**article, **full_article}
         
-        # Fact-check the content
-        print("🔍 Fact-checking content...")
-        fact_check_prompt = fact_check_content(enhanced_article)
-        fact_check_result = call_claude_api(fact_check_prompt)
-        
-        if fact_check_result and "FACT_CHECK_FAIL" in fact_check_result:
-            print(f"❌ Fact-check failed: {fact_check_result[:100]}...")
-            continue
-        
-        if fact_check_result and "FACT_CHECK_PASS" in fact_check_result:
-            print("✅ Fact-check passed")
-        elif fact_check_result and "FACT_CHECK_CONCERNS" in fact_check_result:
-            print("⚠️ Fact-check has concerns - will address in analysis")
-        
-        # Generate dual case studies (local + national comparative)
-        print("🧠 Generating dual Dignity Lens case studies (Local + National)...")
-        case_study_prompt = create_enhanced_case_study_prompt(enhanced_article, fact_check_result)
+        # Generate case study
+        print("🧠 Generating Dignity Lens case study...")
+        case_study_prompt = create_enhanced_case_study_prompt(enhanced_article)
         case_study = call_claude_api(case_study_prompt)
-        save_content(case_study, 'case-studies', enhanced_article['title'], is_dual_case_study=True)
+        save_content(case_study, 'case-studies', enhanced_article['title'])
         
         # Generate news article
         print("📰 Generating community journalism article...")
-        news_prompt = create_news_article_prompt(enhanced_article, fact_check_result)
+        news_prompt = create_news_article_prompt(enhanced_article)
         news_article = call_claude_api(news_prompt)
         save_content(news_article, 'news-articles', enhanced_article['title'])
         
         # Generate blog post
         print("📝 Generating accessible blog post...")
-        blog_prompt = create_blog_post_prompt(enhanced_article, fact_check_result)
+        blog_prompt = create_blog_post_prompt(enhanced_article)
         blog_post = call_claude_api(blog_prompt)
         save_content(blog_post, 'blog-posts', enhanced_article['title'])
         
         processed_count += 1
-        
-        # Process knowledge accumulation from generated case study
-        if case_study and not ('INSUFFICIENT_CONTEXT' in case_study or 'INSUFFICIENT_CONTENT' in case_study):
-            print("🧠 Accumulating knowledge from case study...")
-            knowledge_system.process_case_study(
-                title=enhanced_article['title'],
-                content=case_study,
-                city=extract_location_from_article(enhanced_article),
-                domain=extract_domain_from_article(enhanced_article)
-            )
-        
-        print(f"✅ Completed article {i+1} with fact-checking and knowledge accumulation")
+        print(f"✅ Completed article {i+1}")
     
-    print(f"\n🎉 Daily content generation complete! Processed {processed_count} fact-checked, high-quality articles.")
+    print(f"\n🎉 Daily content generation complete! Processed {processed_count} high-quality articles.")
 
 if __name__ == "__main__":
     main()
