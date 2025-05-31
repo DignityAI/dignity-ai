@@ -1,9 +1,11 @@
 name: Daily Content Generation
-
 on:
   schedule:
-    - cron: '0 9 * * *'  # 9 AM UTC daily
+    - cron: '0 9 * * *'  # 9 AM UTC daily (FIXED: was '0 9 * **')
   workflow_dispatch:  # Manual trigger
+
+permissions:
+  contents: write  # THIS WAS MISSING - CRITICAL FIX!
 
 jobs:
   generate-content:
