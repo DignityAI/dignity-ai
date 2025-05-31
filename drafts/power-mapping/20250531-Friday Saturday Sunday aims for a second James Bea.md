@@ -1,39 +1,38 @@
-# POWER MAPPING ANALYSIS: Culinary Entrepreneurship and Community Transformation at Friday Saturday Sunday
+# POWER MAPPING ANALYSIS: Transforming Restaurant Power Dynamics in Philadelphia's Culinary Landscape
 
 ## Executive Summary
-The Williams' restaurant journey reveals complex power dynamics at the intersection of culinary entrepreneurship, historic preservation, and neighborhood revitalization. Their success highlights both the potential for community-driven economic transformation and the challenges of navigating gentrification and cultural preservation. This analysis exposes the subtle power structures that enable or constrain small business ownership, particularly for Black entrepreneurs in the restaurant industry.
+The story of Friday Saturday Sunday reveals complex power dynamics in restaurant ownership, highlighting how a marginalized (woman/Black-owned) small business navigated institutional challenges while transforming a historic space. The power mapping identifies strategic opportunities for supporting minority restaurateurs by understanding their unique challenges of preservation, innovation, and community engagement.
 
 ## PRIMARY POWER HOLDERS
 
 ### Decision Makers
 - **Individual Names:** Chad and Hanna Williams (Restaurant Owners)
 - **Institutions:** 
-  - Philadelphia Restaurant Industry Board
+  - Philadelphia Restaurant Association
   - James Beard Foundation
-  - Local Historic Preservation Committees
+  - Local Historic Preservation Boards
 - **Decision-Making Process:** 
-  - Entrepreneurial risk-taking
-  - Community acceptance
-  - Culinary industry recognition
+  - Heavily influenced by historical expectations
+  - Community sentiment plays significant role
+  - Awards/recognition systems create gatekeeping
 - **Accountability Mechanisms:** 
-  - Customer feedback
+  - Customer reviews
   - Industry awards
-  - Community reputation
+  - Local community feedback
 
 ### Influencers
 - **Corporate Interests:** 
-  - Local restaurant associations
-  - Hospitality industry networks
-  - Food and beverage distributors
-- **Political Networks:** 
-  - City economic development offices
-  - Small business support programs
+  - Restaurant equipment suppliers
+  - Local food distribution networks
+  - Liquor licensing authorities
 - **Professional Networks:** 
-  - James Beard Award selection committees
+  - James Beard Foundation
+  - Chef associations
   - Culinary training institutions
 - **Media Influences:** 
   - Local food critics
-  - Billy Penn and other local media outlets
+  - Philadelphia food blogs
+  - Hospitality industry publications
 
 ### Resource Controllers
 - **Funding Sources:** 
@@ -42,11 +41,12 @@ The Williams' restaurant journey reveals complex power dynamics at the intersect
   - Private investors
 - **Budget Decision Points:** 
   - Initial restaurant renovation
-  - Ongoing menu and bar development
+  - Menu development
+  - Bar program investment
 - **Private Sector Beneficiaries:** 
-  - Restaurant supply companies
-  - Local food producers
-  - Liquor distributors
+  - Local construction companies
+  - Design firms
+  - Restaurant equipment manufacturers
 
 ## COMMUNITY POWER ANALYSIS
 
@@ -54,82 +54,88 @@ The Williams' restaurant journey reveals complex power dynamics at the intersect
 - **Primary Impact Groups:** 
   - Local restaurant patrons
   - Neighborhood residents
-  - Philadelphia culinary community
+  - Philadelphia food community
 - **Community Assets:** 
-  - Historical restaurant legacy
-  - Local culinary talent
-  - Community dining traditions
+  - Generational restaurant memories
+  - Local culinary expertise
+  - Strong community connections
+- **Existing Organization:** 
+  - Neighborhood business associations
+  - Culinary professional networks
 
 ### Current Community Representation
 - **Formal Representation:** 
-  - Limited direct political representation
-  - Informal community influence through dining culture
+  - Limited minority representation in restaurant ownership
+  - Few Black-owned fine dining establishments
 - **Advocacy Groups:** 
-  - Local restaurant owner associations
-  - Neighborhood business development groups
+  - Minority restaurant owner associations
+  - Women in hospitality networks
 
 ## ORGANIZING STRATEGY RECOMMENDATIONS
 
 ### Short-Term Tactics
 - **Direct Pressure:** 
-  - Amplify stories of community-driven restaurant success
-  - Challenge traditional restaurant industry barriers
+  - Highlight minority restaurateur stories
+  - Create mentorship programs
+  - Develop targeted funding mechanisms
 - **Coalition Building:** 
-  - Partner with other minority restaurant owners
-  - Create mentorship networks for emerging restaurateurs
+  - Connect with local culinary schools
+  - Partner with minority business development centers
+- **Media Strategy:** 
+  - Amplify success stories
+  - Challenge industry gatekeeping
+- **Policy Interventions:** 
+  - Push for equitable restaurant funding
+  - Create minority restaurateur support programs
 
 ### Medium-Term Power Building
 - **Electoral Strategy:** 
-  - Advocate for small business support policies
-  - Push for equitable restaurant industry development programs
+  - Support local candidates understanding small business challenges
+  - Push for more inclusive restaurant grant programs
 - **Institution Building:** 
-  - Develop minority restaurateur support networks
-  - Create alternative culinary training pathways
+  - Create minority restaurateur collective
+  - Develop shared resources/knowledge platforms
 
 ### Long-Term System Change
 - **Structural Changes:** 
   - Redesign restaurant industry funding models
-  - Create more inclusive culinary recognition systems
-- **Alternative Institutions:** 
-  - Community-owned culinary incubators
-  - Cooperative restaurant development models
+  - Create comprehensive support ecosystems
+- **Community Control:** 
+  - Develop community-owned restaurant incubators
+  - Create alternative recognition systems
 
 ## TACTICAL POWER ANALYSIS
 
 ### Leverage Points
 - **Economic Leverage:** 
-  - Demonstrate economic impact of community-driven restaurants
-  - Challenge traditional restaurant investment models
+  - Consumer dining choices
+  - Supporting minority-owned restaurants
+- **Political Leverage:** 
+  - Local business policy advocacy
+  - Challenging existing award structures
 - **Social Leverage:** 
-  - Use cultural storytelling and community connection
-  - Leverage social media and community networks
+  - Community storytelling
+  - Highlighting generational impact
 
 ## ACTION RECOMMENDATIONS
 
 ### Immediate Actions
-1. Document and share the Williams' entrepreneurial journey
-2. Create a support network for emerging restaurateurs of color
-3. Develop a community storytelling platform about local restaurant histories
+1. Create minority restaurateur storytelling platform
+2. Develop targeted funding workshop series
+3. Build cross-generational mentorship program
 
 ### Capacity Building Needs
-- **Research:** 
-  - Comprehensive study of minority restaurant ownership barriers
-  - Economic impact analysis of community-driven restaurants
-- **Organizing:** 
-  - Build cross-neighborhood restaurant owner coalitions
-  - Develop leadership training for culinary entrepreneurs
-
-### Success Metrics
-- Track number of minority-owned restaurants
-- Measure economic mobility for restaurant owners
-- Monitor community cultural preservation through dining spaces
+- **Research:** Comprehensive minority restaurant ownership study
+- **Organizing:** Build strong professional networks
+- **Coalition:** Connect across culinary professional groups
+- **Resources:** Develop alternative funding mechanisms
 
 ## CONCLUSION
-The Williams' story demonstrates how individual entrepreneurship can become a powerful tool for community transformation, challenging systemic barriers while preserving cultural legacy.
+This power mapping reveals that transformative change requires challenging existing institutional frameworks while simultaneously building community-centered alternatives. The Williamses demonstrate that innovation, resilience, and community connection can reshape power dynamics.
 
-**Key Takeaway:** Culinary entrepreneurship is a critical pathway for community economic empowerment and cultural preservation.
+**Key Takeaway:** Minority restaurateurs can challenge systemic barriers through strategic innovation and community engagement.
 
-**Next Steps:**
-1. Document the Williams' journey
-2. Build support networks for restaurateurs
-3. Challenge existing industry power structures
+**Next Steps:** 
+1. Document and share success stories
+2. Build comprehensive support networks
+3. Challenge existing industry gatekeeping mechanisms
