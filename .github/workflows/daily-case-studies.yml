@@ -27,6 +27,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
+    -name: Generate NYC data content
+      env:
+        CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+      run: python scripts/nyc_data
+      
     - name: Generate Chicago data content
       env:
         CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
