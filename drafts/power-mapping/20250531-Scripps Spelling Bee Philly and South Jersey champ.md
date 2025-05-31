@@ -1,7 +1,7 @@
-# POWER MAPPING ANALYSIS: Educational Access and Academic Competition Equity in Spelling Bee Participation
+# POWER MAPPING ANALYSIS: Educational Access and Achievement in Spelling Bee Participation
 
 ## Executive Summary
-The Scripps National Spelling Bee reveals complex power dynamics in educational opportunity, highlighting how academic competitions can simultaneously empower and marginalize students. This power mapping identifies critical leverage points for expanding educational access and challenging systemic barriers in competitive academic spaces.
+The Scripps National Spelling Bee reveals complex power dynamics in educational opportunity, highlighting how individual student resilience intersects with systemic barriers in academic competitions. While the event celebrates academic achievement, it also exposes unequal access to educational resources and preparation. Community organizers can leverage this narrative to challenge educational inequities and create more inclusive pathways for student success.
 
 ## PRIMARY POWER HOLDERS
 
@@ -9,120 +9,139 @@ The Scripps National Spelling Bee reveals complex power dynamics in educational 
 - **Institutions:** 
   - Scripps Howard Foundation
   - National Spelling Bee Organization
-  - Regional Competition Coordinators
+  - Regional Educational Authorities (WHYY, local school districts)
 - **Decision-Making Process:** 
   - Centralized competition design
-  - Limited regional representation
-  - Exclusive qualification mechanisms
+  - Qualification criteria
+  - Resource allocation for participants
 - **Accountability Mechanisms:** 
   - Public transparency
-  - Media coverage
-  - Participant feedback channels
+  - Diversity reporting
+  - Competition accessibility metrics
 
 ### Influencers
 - **Corporate Interests:** 
   - Educational technology companies
-  - Test preparation businesses
-  - Merriam-Webster and Encyclopedia Britannica
+  - Test preparation services
+  - Merriam-Webster, Encyclopedia Britannica
 - **Professional Networks:** 
-  - Linguistic associations
-  - Educational consultants
   - Academic competition coaches
+  - Linguistic experts
+  - Educational nonprofits
 - **Media Influences:** 
-  - Framing competition as meritocratic
-  - Highlighting individual achievement
-  - Minimizing systemic access barriers
+  - Framing academic achievement
+  - Highlighting individual student narratives
+  - Creating competitive spectacle
 
 ### Resource Controllers
 - **Funding Sources:** 
+  - Scripps Howard Foundation
   - Corporate sponsorships
-  - Educational grants
-  - Individual donations
+  - Regional educational grants
 - **Budget Decision Points:** 
-  - Scholarship allocations
   - Competition infrastructure
-  - Regional support mechanisms
+  - Prize money allocation
+  - Regional qualification processes
 - **Private Sector Beneficiaries:** 
-  - Test preparation companies
-  - Educational publishing industries
+  - Educational technology companies
+  - Test preparation services
+  - Media platforms covering competitions
 
 ## COMMUNITY POWER ANALYSIS
 
 ### Affected Communities
 - **Primary Impact Groups:** 
-  - Students from diverse linguistic backgrounds
+  - Student participants
+  - K-12 students interested in academic competitions
   - Immigrant and multilingual families
-  - Title I and under-resourced schools
 - **Community Assets:** 
-  - Linguistic diversity
-  - Resilience
-  - Intergenerational learning networks
+  - Student motivation
+  - Cultural linguistic knowledge
+  - Family educational aspirations
+- **Existing Organization:** 
+  - School language clubs
+  - Academic competition support groups
+  - Multicultural educational networks
 
 ### Current Community Representation
+- **Formal Representation:** 
+  - Limited student voice in competition design
+  - Minimal community input in qualification processes
 - **Representation Gaps:** 
-  - Limited socioeconomic diversity
-  - High individual preparation costs
-  - Unequal regional support structures
+  - Socioeconomic barriers to participation
+  - Limited support for underresourced schools
+  - Lack of comprehensive preparation resources
+
+## POWER DYNAMICS & RELATIONSHIPS
+
+### Alliance Map
+- **Potential Allies:** 
+  - Progressive educational nonprofits
+  - Multilingual education advocates
+  - Community learning centers
+- **Swing Votes:** 
+  - School administrators
+  - Regional educational boards
+- **Opposition:** 
+  - Standardized testing advocates
+  - Competitive academic preparation industries
 
 ## ORGANIZING STRATEGY RECOMMENDATIONS
 
 ### Short-Term Tactics
 - **Direct Pressure:** 
   - Demand transparent qualification criteria
-  - Challenge fee structures
-  - Develop regional support programs
+  - Challenge resource inequities
+  - Create alternative preparation resources
 - **Coalition Building:** 
-  - Partner with linguistic justice organizations
-  - Engage multilingual education advocates
-  - Create cross-regional support networks
+  - Connect with multilingual education networks
+  - Partner with community learning centers
+- **Media Strategy:** 
+  - Highlight diverse student experiences
+  - Expose systemic barriers
 
 ### Medium-Term Power Building
 - **Electoral Strategy:** 
-  - Advocate for educational equity legislation
-  - Support school board candidates committed to academic access
-- **Policy Development:** 
-  - Create sliding-scale competition fees
-  - Develop free preparation resources
-  - Establish mentorship programs
+  - Advocate for educational equity policies
+  - Support school board candidates committed to inclusive academic opportunities
+- **Institution Building:** 
+  - Develop community-based academic preparation programs
+  - Create scholarship and support networks
 
 ### Long-Term System Change
 - **Structural Changes:** 
-  - Democratize academic competition models
-  - Create community-controlled educational resources
-  - Challenge meritocratic myths in academic spaces
-
-## SDOH-SPECIFIC POWER ANALYSIS
-
-### Educational Access Power Dynamics
-- **System Controllers:** 
-  - Competition organizers
-  - Educational gatekeepers
-  - Resource allocation decision-makers
-- **Community Health Assets:** 
-  - Linguistic capital
-  - Intergenerational learning strategies
-  - Community knowledge networks
+  - Redesign academic competition models
+  - Create more inclusive qualification processes
+- **Community Control:** 
+  - Student-led competition design
+  - Community-driven resource allocation
 
 ## ACTION RECOMMENDATIONS
 
 ### Immediate Actions
-1. Develop free online spelling bee preparation resources
-2. Create regional support cohorts for underresourced students
-3. Document and challenge current competition access barriers
+1. Map local spelling bee participant demographics
+2. Develop community-based spelling bee preparation workshop
+3. Create advocacy report on participation barriers
+
+### Capacity Building Needs
+- **Research:** 
+  - Detailed study on spelling bee participation equity
+  - Analysis of preparation resource distribution
+- **Organizing:** 
+  - Build multilingual student support networks
+  - Develop peer mentorship programs
 
 ### Success Metrics
-- Increased demographic diversity in competition
-- Reduced individual preparation costs
-- Enhanced regional support mechanisms
+- Track increased diverse participation
+- Measure community-developed preparation resources
+- Monitor systemic policy changes
 
 ## CONCLUSION
-This power analysis reveals that academic competitions like the Spelling Bee are not neutral spaces but complex power landscapes where systemic inequities are reproduced and challenged.
+This power mapping reveals that academic competitions like the Spelling Bee are not simply neutral meritocratic events, but complex systems reflecting broader educational inequities. By centering student experiences and challenging existing power structures, community organizers can transform these competitions into platforms for genuine educational empowerment.
 
-**Key Takeaway:** Educational access requires dismantling invisible barriers through collective organizing and resource redistribution.
+**Key Takeaway:** Educational achievement is a collective journey, not an individual competition.
 
-**Next Steps:** 
-1. Map current regional support structures
-2. Develop community-driven preparation resources
-3. Build cross-regional solidarity networks
-
-This analysis transforms an individual achievement narrative into a broader movement for educational justice and community empowerment.
+**Next Steps:**
+1. Conduct community listening sessions
+2. Design inclusive preparation resources
+3. Build cross-community academic support network
