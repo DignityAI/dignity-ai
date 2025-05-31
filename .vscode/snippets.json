@@ -1,0 +1,26 @@
+{
+  "Dignity Lens Domain Tags": {
+    "prefix": "domain",
+    "body": [
+      "**[DOMAIN:${1|POWER_STRUCTURES,CONTROL_MECHANISMS,COMMUNITY_RESISTANCE,LIBERATION_STRATEGIES|}]**"
+    ]
+  },
+  "Historical Era Tags": {
+    "prefix": "era", 
+    "body": [
+      "**[ERA:${1|ENSLAVEMENT,RECONSTRUCTION,JIM_CROW,CIVIL_RIGHTS,MASS_INCARCERATION,DIGITAL_REBELLION,ABOLITIONIST_FUTURING|}]**"
+    ]
+  },
+  "Case Study Reference": {
+    "prefix": "case",
+    "body": [
+      "**[CASE:${1:CASE_NAME}]** **[${2:LOCATION}]** **[${3:SYSTEMATIC_PATTERN}]**"
+    ]
+  },
+  "Cross Reference": {
+    "prefix": "xref",
+    "body": [
+      "**[CROSS_REFERENCE]** **[RELATED_STUDY:${1:STUDY_NAME}]** **[CONNECTION_POINT:${2:CONNECTION}]**"
+    ]
+  }
+}
