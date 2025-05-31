@@ -1,0 +1,33 @@
+name: Auto-Annotate Dignity Lens Documents
+on:
+  push:
+    paths: ['content/studies/*.md']
+  workflow_dispatch:
+
+jobs:
+  annotate:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        pip install anthropic python-frontmatter
+    
+    - name: Annotate documents
+      env:
+        CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+      run: python scripts/auto_annotate.py
+    
+    - name: Commit annotations
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add content/
+        git commit -m "Auto-annotate: $(date)" || exit 0
+        git push
