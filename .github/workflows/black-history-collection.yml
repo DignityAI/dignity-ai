@@ -2,8 +2,8 @@ name: Fetch LOC Content
 
 on:
   schedule:
-    - cron: "0 10 * * *"  # Runs every day at 10 AM UTC
-  workflow_dispatch:      # Manual trigger
+    - cron: "0 10 * * *"
+  workflow_dispatch:
 
 jobs:
   fetch-and-publish:
@@ -25,13 +25,12 @@ jobs:
 
       - name: Run LOC fetch script
         run: |
-          python scripts/loc_dignity_search.py
+          python scripts/fetch_loc.py
 
       - name: Commit and push new posts
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
           git pull --rebase origin main
           git add _posts/
           git commit -m "Add new LOC posts [auto]" || echo "No changes to commit"
