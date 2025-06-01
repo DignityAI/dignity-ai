@@ -1,0 +1,41 @@
+name: Library of Congress Content Generation
+
+on:
+  schedule:
+    - cron: '0 10 * * *'  # 10 AM UTC
+    - cron: '0 22 * * *'  # 10 PM UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate-loc-content:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests
+    
+    - name: Generate LOC search content
+      run: python scripts/loc_dignity_search.py
+    
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
+        git add .
+        git diff --staged --quiet || (git commit -m "LOC Dignity Lens content generation: $(date +%Y-%m-%d)" && git push)
