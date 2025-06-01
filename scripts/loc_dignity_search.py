@@ -237,11 +237,12 @@ class LOCScraper:
             # Look for image URLs in various places
             if 'image_url' in item:
                 cleaned['image_url'] = item['image_url']
-            elif 'resources' in item:
+            elif 'resources' in item and isinstance(item['resources'], list):
                 for resource in item['resources']:
-                    if 'image' in resource.get('label', '').lower():
-                        cleaned['image_url'] = resource.get('url', '')
-                        break
+                    if isinstance(resource, dict) and 'label' in resource:
+                        if 'image' in str(resource.get('label', '')).lower():
+                            cleaned['image_url'] = resource.get('url', '')
+                            break
             
             # Look for thumbnails
             if 'thumbnail' in item:
@@ -306,7 +307,7 @@ class LOCScraper:
                         
                         # Get file extension from URL
                         ext = 'jpg'
-                        if image_url.lower().endswith(('.png', '.gif', '.jpeg', '.jpg')):
+                        if isinstance(image_url, str) and image_url.lower().endswith(('.png', '.gif', '.jpeg', '.jpg')):
                             ext = image_url.split('.')[-1].lower()
                         
                         filename = f"loc_data/images/{safe_term}_{safe_title}_{image_count}.{ext}"
