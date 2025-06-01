@@ -4,7 +4,7 @@ import json
 import os
 
 BASE_URL = "https://www.loc.gov/search/?q="
-BATCH_SIZE = 10  # <-- pull 10 pages per keyword per run
+BATCH_SIZE = 5  # <-- pull 10 pages per keyword per run
 PROGRESS_FILE = "loc_progress.json"
 OUTPUT_DIR = "_posts"
 
