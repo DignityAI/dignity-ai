@@ -24,10 +24,10 @@ jobs:
         pip install -r requirements.txt
 
     - name: Run LOC Text Fetch Script
-      run: python scripts/loc_dignity_search.py
+      run: python scripts/loc_dignity.py
 
     - name: Run LOC Image Fetch Script
-      run: python scripts/loc_dignity_images.py
+      run: python scripts/loc_dignity.py
 
     - name: Commit and push changes
       run: |
