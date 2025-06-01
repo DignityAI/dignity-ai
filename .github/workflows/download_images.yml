@@ -1,35 +1,34 @@
-name: Download LOC images only
+name: Download LOC Images
 
 on:
   workflow_dispatch:
 
 jobs:
-  download-images:
+  download:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.x'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
 
-    - name: Install dependencies
-      run: pip install requests
+      - name: Install dependencies
+        run: pip install requests
 
-    - name: Run image download script only
-      run: python scripts/download_images.py
+      - name: Run image downloader
+        run: python scripts/download_images.py
 
-    - name: Commit and push new images
-      run: |
-        git config user.name "github-actions"
-        git config user.email "github-actions@github.com"
-        git add images/
-        if git diff --cached --quiet; then
-          echo "No new images to commit."
-        else
-          git commit -m "Add new LOC images [auto]"
-          git push
-        fi
+      - name: Commit and push new images
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add images/
+          if git diff --cached --quiet; then
+            echo "No new images to commit."
+          else
+            git commit -m "Add downloaded LOC images [auto]"
+            git push
