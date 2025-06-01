@@ -1,0 +1,8 @@
+---
+title: "Omaha Indian Music"
+date: 2025-06-01
+source: "https://www.loc.gov/collections/omaha-indian-music/about-this-collection/"
+keyword: "black history"
+---
+
+Presented here are selections from the American Folklife Center's collections documenting Omaha music traditions. The sound recordings include 44 wax cylinder recordings made in the 1890s (first published on a 1985 LP entitled Omaha Indian Music: Historical Recordings from the Fletcher/La Flesche Collection), 323 songs and spoken-word segments from the 1983 Omaha harvest celebration pow-wow, 24 spoken-word segments from an interview with an Omaha elder in 1983, 25 songs and speeches from a performance by members of the Hethu'shka Society (recorded at the Library of Congress in 1985), and 61 spoken word segments from an interview conducted with an Omaha musician in 1999. Included are 654 black-and-white and 436 color photographs that were made by Library of Congress employees during the 1983 pow-wow and 1985 concert. Additional documentation from the 1983 pow-wow includes 35 pages of fieldnotes, 30 pages of handwritten tape recording logs, an 8-page program, and two posters. A concert flier and a Hethu'shka Society membership document are from the 1985 performance at the Library of Congress. Also included is official correspondence pertaining to the publication of the LP, the pow-wow, and the 1985 concert. Essays included in the booklet accompanying the LP and references to relevant articles from Folklife Center News provide framing text.
