@@ -1,84 +1,55 @@
 import os
 import re
 import requests
+import hashlib
 from urllib.parse import urljoin
 
 POSTS_DIR = "_posts"
 IMAGES_DIR = "images"
 os.makedirs(IMAGES_DIR, exist_ok=True)
 
-def extract_url_from_post(filepath):
-    with open(filepath, "r", encoding="utf-8") as f:
-        content = f.read()
-    # Simple regex to extract source URL from frontmatter: source: "URL"
-    match = re.search(r'source:\s*"(.*?)"', content)
-    if match:
-        return match.group(1)
-    return None
+def extract_source_links():
+    links = []
+    for fname in os.listdir(POSTS_DIR):
+        if fname.endswith(".md"):
+            with open(os.path.join(POSTS_DIR, fname), encoding="utf-8") as f:
+                content = f.read()
+                match = re.search(r'source:\s*"(.*?)"', content)
+                if match:
+                    links.append(match.group(1))
+    return links
 
-def fetch_manifest_json(item_url):
-    # Usually manifest URL is item_url + '/manifest.json'
-    if not item_url.endswith("/"):
-        item_url += "/"
-    manifest_url = urljoin(item_url, "manifest.json")
+def get_manifest_url(item_url):
+    if not item_url.endswith('/'):
+        item_url += '/'
+    return urljoin(item_url, 'manifest.json')
+
+def download_images_from_manifest(manifest_url):
     try:
         resp = requests.get(manifest_url, timeout=15)
-        resp.raise_for_status()
-        return resp.json()
+        data = resp.json()
+        canvases = data.get("sequences", [])[0].get("canvases", [])
+        for canvas in canvases:
+            img_info = canvas.get("images", [])[0].get("resource", {})
+            img_url = img_info.get("@id")
+            if img_url:
+                img_hash = hashlib.md5(img_url.encode()).hexdigest()[:10]
+                ext = os.path.splitext(img_url)[-1] or ".jpg"
+                img_path = os.path.join(IMAGES_DIR, f"{img_hash}{ext}")
+                if not os.path.exists(img_path):
+                    img_data = requests.get(img_url).content
+                    with open(img_path, "wb") as out_file:
+                        out_file.write(img_data)
+                    print(f"Saved image: {img_path}")
     except Exception as e:
-        print(f"Error fetching manifest for {item_url}: {e}")
-        return None
-
-def download_image(img_url, save_path):
-    try:
-        resp = requests.get(img_url, stream=True, timeout=20)
-        resp.raise_for_status()
-        with open(save_path, "wb") as f:
-            for chunk in resp.iter_content(1024):
-                f.write(chunk)
-        print(f"Saved image: {save_path}")
-    except Exception as e:
-        print(f"Failed to download {img_url}: {e}")
-
-def main():
-    for filename in os.listdir(POSTS_DIR):
-        if not filename.endswith(".md"):
-            continue
-        post_path = os.path.join(POSTS_DIR, filename)
-        item_url = extract_url_from_post(post_path)
-        if not item_url:
-            print(f"No source URL found in {filename}, skipping.")
-            continue
-
-        manifest = fetch_manifest_json(item_url)
-        if not manifest:
-            continue
-
-        # LOC manifest images are usually in manifest["items"]
-        images = manifest.get("items", [])
-        if not images:
-            print(f"No images found in manifest for {item_url}")
-            continue
-
-        # Download images in the manifest
-        for idx, img_item in enumerate(images):
-            # Image URL usually in img_item["id"]
-            img_url = img_item.get("id")
-            if not img_url:
-                continue
-
-            # Construct local filename: post filename + image index + extension
-            ext = os.path.splitext(img_url)[1].split("?")[0] or ".jpg"
-            safe_filename = filename.replace(".md", "")
-            save_filename = f"{safe_filename}_img{idx+1}{ext}"
-            save_path = os.path.join(IMAGES_DIR, save_filename)
-
-            # Skip if already downloaded
-            if os.path.exists(save_path):
-                print(f"Image already downloaded: {save_filename}")
-                continue
-
-            download_image(img_url, save_path)
+        print(f"Failed to fetch manifest: {manifest_url} — {e}")
 
 if __name__ == "__main__":
-    main()
+    item_links = extract_source_links()
+    for link in item_links:
+        if "loc.gov/item" in link:
+            manifest_url = get_manifest_url(link)
+            print(f"Trying manifest: {manifest_url}")
+            download_images_from_manifest(manifest_url)
+
+    print("Done downloading images.")
