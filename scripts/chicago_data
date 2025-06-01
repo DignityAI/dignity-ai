@@ -5,6 +5,7 @@ Advanced prompt engineering for systematic racism analysis and community organiz
 """
 
 import os
+import sys
 import json
 import logging
 import requests
@@ -14,7 +15,6 @@ from typing import Dict, List, Optional, Any, Tuple
 import anthropic
 import time
 import re
-import sys
 from collections import defaultdict
 
 # Configure logging
