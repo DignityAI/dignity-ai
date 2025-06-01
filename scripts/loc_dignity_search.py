@@ -300,10 +300,10 @@ class LOCScraper:
                 # Download images if available
                 if download_images and cleaned['search_type'] == 'images':
                     image_url = cleaned.get('image_url') or cleaned.get('thumbnail_url')
-                    if image_url:
+                    if image_url and isinstance(image_url, str):
                         # Create safe filename
                         safe_term = "".join(c for c in term if c.isalnum() or c in (' ', '-', '_')).strip()
-                        safe_title = "".join(c for c in cleaned['title'][:50] if c.isalnum() or c in (' ', '-', '_')).strip()
+                        safe_title = "".join(c for c in str(cleaned['title'])[:50] if c.isalnum() or c in (' ', '-', '_')).strip()
                         
                         # Get file extension from URL
                         ext = 'jpg'
@@ -316,6 +316,10 @@ class LOCScraper:
                             cleaned['downloaded_image'] = filename
                             image_count += 1
                             logger.info(f"📸 Downloaded image: {filename}")
+                        else:
+                            logger.warning(f"❌ Failed to download: {image_url}")
+                    else:
+                        logger.debug(f"No valid image URL found for item: {cleaned.get('title', 'Unknown')}")
                 
                 # Only keep items with some content
                 if len(cleaned.get('full_text', '')) > 20 or cleaned.get('downloaded_image'):
