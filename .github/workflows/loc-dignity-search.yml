@@ -1,0 +1,72 @@
+# .github/workflows/loc-dignity-search.yml
+name: Library of Congress Dignity Lens Search
+
+on:
+  schedule:
+    # Run daily at 6 AM UTC (1 AM Chicago)
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    # Allow manual trigger
+    inputs:
+      search_type:
+        description: 'Search focus'
+        required: true
+        default: 'comprehensive'
+        type: choice
+        options:
+        - comprehensive
+        - slave_era_only
+        - reconstruction_only
+      max_items:
+        description: 'Max items per domain'
+        required: false
+        default: '15'
+
+jobs:
+  loc-search:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests anthropic beautifulsoup4 feedparser
+        
+    - name: Run LOC Dignity Search
+      env:
+        CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      run: |
+        python loc_dignity_search.py
+        
+    - name: Process Results with Claude
+      env:
+        CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      run: |
+        python loc_workflow_processor.py
+        
+    - name: Commit and push results
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add loc_results/ loc_output/
+        git diff --staged --quiet || git commit -m "Daily LOC Dignity Lens search results - $(date)"
+        git push
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v5
+      with:
+        name: loc-dignity-results-${{ github.run_number }}
+        path: |
+          loc_results/
+          loc_output/
+        retention-days: 30
