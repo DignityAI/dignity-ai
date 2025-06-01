@@ -3,9 +3,8 @@
 Enhanced DignityAI: Layered Analysis System with Chicago Data Integration
 Fixed version with proper Chicago Open Data API integration including zip codes and location data
 """
-
-import os
 import sys
+import os
 import json
 import logging
 import requests
