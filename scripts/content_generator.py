@@ -23,7 +23,7 @@ annotator = DignityAnnotator(os.environ['CLAUDE_API_KEY'])
 RSS_FEEDS = [
    "https://www.govinfo.gov/rss/uscourts-ilnd.xml",
    "https://www.govinfo.gov/rss/ppp.xml",
-   "https://www.gov info.gov/rss/dcpd.xml",
+   "https://www.govinfo.gov/rss/dcpd.xml",
    "https://www.govinfo.gov/rss/bills.xml',
    "https://www.govinfo.gov/rss/statute.xml",
    "https://www.govinfo.gov/rss/uscode.xml",
