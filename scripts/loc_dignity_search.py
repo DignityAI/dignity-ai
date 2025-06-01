@@ -154,7 +154,8 @@ class FixedLOCScraper:
             resources = self.safe_get_list(item, 'resources')
             for resource in resources:
                 if isinstance(resource, dict):
-                    label = self.safe_get_string(resource, 'label').lower()
+                    label_value = self.safe_get_string(resource, 'label')
+                    label = label_value.lower() if isinstance(label_value, str) else ""
                     if 'image' in label:
                         cleaned['image_url'] = self.safe_get_string(resource, 'url')
                         break
@@ -207,7 +208,9 @@ class FixedLOCScraper:
                 return 'jpg'
             
             # Check for common extensions
-            url_lower = str(url).lower()
+            if not url or not isinstance(url, str):
+                return 'jpg'
+            url_lower = url.lower()
             for ext in ['.jpg', '.jpeg', '.png', '.gif']:
                 if ext in url_lower:
                     return ext[1:]  # Remove the dot
