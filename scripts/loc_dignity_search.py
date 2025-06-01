@@ -1,80 +1,70 @@
-import os
+# fetch_loc_all.py
+
 import requests
 import json
-import re
-from urllib.parse import urlparse
-from slugify import slugify  # pip install python-slugify
+from datetime import datetime
+from pathlib import Path
+import hashlib
+import time
 
-# === CONFIGURATION ===
-SEARCH_QUERY = "African American slavery"
-DOWNLOAD_DIR = "loc_images"
-NUM_RECORDS = 20  # Limit number of records for test runs
-BASE_URL = "https://www.loc.gov/photos/"
+KEYWORDS = [
+    "slavery", "enslaved people", "slave", "plantation", "African Americans",
+    "freedmen", "reconstruction", "emancipation", "civil rights", "abolition",
+    "underground railroad", "black history", "negro", "colored people",
+    "jim crow", "segregation"
+]
 
-# === Ensure directory exists ===
-os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+BASE_URL = "https://www.loc.gov/search/?fo=json&q="
+posts_dir = Path("_posts")
+posts_dir.mkdir(parents=True, exist_ok=True)
 
-# === Helper: Clean and create safe filenames ===
-def safe_filename(s, max_len=100):
-    base = slugify(s)[:max_len]
-    return re.sub(r'[^a-zA-Z0-9-_\.]', '_', base)
+def sanitize_title(title):
+    return title.strip().replace(":", "-").replace("/", "-").replace(" ", "-")[:50]
 
-# === Fetch records from LoC ===
-params = {
-    "q": SEARCH_QUERY,
-    "fo": "json",
-    "c": NUM_RECORDS,
-    "at": "results"
-}
-response = requests.get(BASE_URL, params=params)
-response.raise_for_status()
-data = response.json()
+def save_entry(entry, keyword):
+    title = entry.get("title", "No Title")
+    safe_title = sanitize_title(title)
+    description = entry.get("description", ["No description available."])[0]
+    date_str = datetime.utcnow().strftime("%Y-%m-%d")
+    url = entry.get("url", "")
+    uid = hashlib.md5((title + url).encode()).hexdigest()[:8]
+    filename = f"{date_str}-{safe_title}-{uid}.md"
+    filepath = posts_dir / filename
 
-# === Loop through results ===
-for idx, item in enumerate(data.get("results", []), start=1):
-    title = item.get("title", "Untitled")
-    image_url = item.get("image_url", [])
-    url = item.get("url", "")
-    item_id = item.get("id", f"record-{idx}")
+    if not filepath.exists():
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(f"---\n")
+            f.write(f"title: \"{title}\"\n")
+            f.write(f"date: {date_str}\n")
+            f.write(f"source: Library of Congress\n")
+            f.write(f"loc_url: {url}\n")
+            f.write(f"keyword: {keyword}\n")
+            f.write(f"---\n\n")
+            f.write(description)
 
-    # Use the first image if available
-    if not image_url:
-        print(f"[SKIP] No image URL for: {title}")
-        continue
+def fetch_all_for_keyword(keyword):
+    page = 1
+    while True:
+        print(f"Fetching page {page} for keyword: {keyword}")
+        response = requests.get(f"{BASE_URL}{requests.utils.quote(keyword)}&sp={page}")
+        if response.status_code != 200:
+            print(f"Failed on page {page}: {response.status_code}")
+            break
 
-    img_url = image_url[0]
-    img_ext = os.path.splitext(urlparse(img_url).path)[1] or ".jpg"
+        data = response.json()
+        results = data.get("results", [])
+        if not results:
+            break
 
-    filename_base = safe_filename(title or item_id)
-    image_path = os.path.join(DOWNLOAD_DIR, f"{filename_base}{img_ext}")
-    meta_path = os.path.join(DOWNLOAD_DIR, f"{filename_base}.json")
+        for entry in results:
+            save_entry(entry, keyword)
 
-    # === Download image ===
-    try:
-        img_resp = requests.get(img_url, timeout=10)
-        img_resp.raise_for_status()
-        with open(image_path, "wb") as f:
-            f.write(img_resp.content)
-        print(f"[OK] Saved image: {image_path}")
-    except Exception as e:
-        print(f"[ERROR] Failed image download for '{title}': {e}")
-        continue
+        if "next" not in data.get("pagination", {}):
+            break
 
-    # === Save metadata ===
-    metadata = {
-        "title": title,
-        "original_url": url,
-        "image_url": img_url,
-        "loc_id": item_id,
-        "description": item.get("description"),
-        "date": item.get("date"),
-        "subjects": item.get("subject"),
-        "source": "Library of Congress"
-    }
+        page += 1
+        time.sleep(1)  # prevent hitting API rate limits
 
-    try:
-        with open(meta_path, "w", encoding="utf-8") as f:
-            json.dump(metadata, f, indent=2)
-        print(f"[OK] Saved metadata: {meta_path}")
-    except Exception as e:
-        print(f"[ERROR] Failed to save metadata for '{title}': {e}")
+# Main execution
+for keyword in KEYWORDS:
+    fetch_all_for_keyword(keyword)
