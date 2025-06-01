@@ -1,87 +1,80 @@
 import os
-import json
 import requests
-from tqdm import tqdm
-from time import sleep
-from loguru import logger
+import json
+import re
+from urllib.parse import urlparse
+from slugify import slugify  # pip install python-slugify
 
-# === Setup ===
-DATA_DIR = "data/loc"
-os.makedirs(DATA_DIR, exist_ok=True)
+# === CONFIGURATION ===
+SEARCH_QUERY = "African American slavery"
+DOWNLOAD_DIR = "loc_images"
+NUM_RECORDS = 20  # Limit number of records for test runs
+BASE_URL = "https://www.loc.gov/photos/"
 
-logger.add("loc_log.log", rotation="1 MB")
+# === Ensure directory exists ===
+os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
-# === Functions ===
+# === Helper: Clean and create safe filenames ===
+def safe_filename(s, max_len=100):
+    base = slugify(s)[:max_len]
+    return re.sub(r'[^a-zA-Z0-9-_\.]', '_', base)
 
-def fetch_data(query, count=10):
-    url = f"https://www.loc.gov/search/?q={query}&fo=json"
+# === Fetch records from LoC ===
+params = {
+    "q": SEARCH_QUERY,
+    "fo": "json",
+    "c": NUM_RECORDS,
+    "at": "results"
+}
+response = requests.get(BASE_URL, params=params)
+response.raise_for_status()
+data = response.json()
+
+# === Loop through results ===
+for idx, item in enumerate(data.get("results", []), start=1):
+    title = item.get("title", "Untitled")
+    image_url = item.get("image_url", [])
+    url = item.get("url", "")
+    item_id = item.get("id", f"record-{idx}")
+
+    # Use the first image if available
+    if not image_url:
+        print(f"[SKIP] No image URL for: {title}")
+        continue
+
+    img_url = image_url[0]
+    img_ext = os.path.splitext(urlparse(img_url).path)[1] or ".jpg"
+
+    filename_base = safe_filename(title or item_id)
+    image_path = os.path.join(DOWNLOAD_DIR, f"{filename_base}{img_ext}")
+    meta_path = os.path.join(DOWNLOAD_DIR, f"{filename_base}.json")
+
+    # === Download image ===
     try:
-        response = requests.get(url)
-        response.raise_for_status()
-        data = response.json()
-        return data.get("results", [])[:count]
-    except requests.RequestException as e:
-        logger.error(f"Error fetching data: {e}")
-        return []
-
-def download_image(url, path):
-    try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-
-        # Ensure the content is actually an image
-        content_type = response.headers.get("Content-Type", "")
-        if "image" not in content_type:
-            logger.warning(f"URL did not return image content: {url} (content-type: {content_type})")
-            return None
-
-        if isinstance(response.content, bytes):
-            with open(path, 'wb') as f:
-                f.write(response.content)
-            logger.info(f"🖼️ Saved image: {path}")
-            return path
-        else:
-            logger.warning(f"Image download failed (not bytes): {url}")
-            return None
-    except requests.RequestException as e:
-        logger.warning(f"Image download error: {e} ({url})")
-        return None
+        img_resp = requests.get(img_url, timeout=10)
+        img_resp.raise_for_status()
+        with open(image_path, "wb") as f:
+            f.write(img_resp.content)
+        print(f"[OK] Saved image: {image_path}")
     except Exception as e:
-        logger.warning(f"Unexpected image error: {e} ({url})")
-        return None
+        print(f"[ERROR] Failed image download for '{title}': {e}")
+        continue
 
-def save_entry(entry, index):
-    file_path = os.path.join(DATA_DIR, f"entry_{index}.json")
-    with open(file_path, 'w', encoding='utf-8') as f:
-        json.dump(entry, f, ensure_ascii=False, indent=2)
-    logger.info(f"📄 Saved entry {index} to {file_path}")
+    # === Save metadata ===
+    metadata = {
+        "title": title,
+        "original_url": url,
+        "image_url": img_url,
+        "loc_id": item_id,
+        "description": item.get("description"),
+        "date": item.get("date"),
+        "subjects": item.get("subject"),
+        "source": "Library of Congress"
+    }
 
-# === Main ===
-
-def main():
-    query = "African American history"
-    results = fetch_data(query, count=20)
-
-    for idx, result in enumerate(tqdm(results, desc="Processing LOC Results")):
-        title = result.get("title", "Untitled")
-        image_url = result.get("image_url", [None])[0]
-        entry = {
-            "title": title,
-            "date": result.get("date"),
-            "description": result.get("description"),
-            "url": result.get("url"),
-            "image_path": None
-        }
-
-        if image_url:
-            image_name = f"image_{idx}.jpg"
-            image_path = os.path.join(DATA_DIR, image_name)
-            downloaded = download_image(image_url, image_path)
-            if downloaded:
-                entry["image_path"] = image_path
-
-        save_entry(entry, idx)
-        sleep(1)  # Be polite to the LOC servers
-
-if __name__ == "__main__":
-    main()
+    try:
+        with open(meta_path, "w", encoding="utf-8") as f:
+            json.dump(metadata, f, indent=2)
+        print(f"[OK] Saved metadata: {meta_path}")
+    except Exception as e:
+        print(f"[ERROR] Failed to save metadata for '{title}': {e}")
