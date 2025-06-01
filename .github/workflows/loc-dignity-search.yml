@@ -2,8 +2,7 @@ name: Library of Congress Content Generation
 
 on:
   schedule:
-    - cron: '0 10 * * *'  # 10 AM UTC
-    - cron: '0 22 * * *'  # 10 PM UTC
+    - cron: '0 10,22 * * *'  # Twice a day (10 AM & 10 PM UTC)
   workflow_dispatch:
 
 permissions:
@@ -12,30 +11,29 @@ permissions:
 jobs:
   generate-loc-content:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install requests
-    
-    - name: Generate LOC search content
-      run: python scripts/loc_dignity_search.py
-    
-    - name: Commit and push changes
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-        git add .
-        git diff --staged --quiet || (git commit -m "LOC Dignity Lens content generation: $(date +%Y-%m-%d)" && git push)
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Run LOC dignity script
+        run: python scripts/loc_dignity_search.py
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git pull --rebase
+          git add _posts
+          git diff --staged --quiet || (git commit -m "Add LOC dignity posts: $(date +%Y-%m-%dT%H:%M:%S)" && git push)
