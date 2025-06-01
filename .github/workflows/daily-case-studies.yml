@@ -1,14 +1,14 @@
-name: Daily Content Generation
+name: Library of Congress Content Generation
 on:
   schedule:
-    - cron: '0 9 * * *'  # 9 AM UTC daily
+    - cron: '0 10 * * *'  # 10 AM UTC daily (after RSS workflow)
   workflow_dispatch:  # Manual trigger
 
 permissions:
   contents: write
 
 jobs:
-  generate-content:
+  generate-loc-content:
     runs-on: ubuntu-latest
     
     steps:
@@ -25,23 +25,17 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install requests anthropic beautifulsoup4 feedparser
       
-    - name: Generate Chicago data content
+    - name: Generate LOC search content
       env:
         CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
-      run: python scripts/chicago_data
+      run: python loc_dignity_search.py
 
-    - name: Generate NYC data content
+    - name: Process LOC results
       env:
         CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
-      run: python scripts/nyc_data
-
-
-    - name: Generate content
-      env:
-        CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
-      run: python scripts/content_generator.py
+      run: python loc_workflow_processor.py
     
     - name: Commit and push changes
       run: |
@@ -49,4 +43,4 @@ jobs:
         git config --local user.name "GitHub Action"
         
         git add .
-        git diff --staged --quiet || (git commit -m "Daily content generation: $(date +%Y-%m-%d)" && git push)
+        git diff --staged --quiet || (git commit -m "LOC Dignity Lens content generation: $(date +%Y-%m-%d)" && git push)
