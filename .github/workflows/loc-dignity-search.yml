@@ -28,10 +28,10 @@ jobs:
     
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v4
       
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v4
       with:
         python-version: '3.11'
         
@@ -63,7 +63,7 @@ jobs:
         git push
         
     - name: Upload artifacts
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v3
       with:
         name: loc-dignity-results-${{ github.run_number }}
         path: |
