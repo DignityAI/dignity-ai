@@ -1,4 +1,4 @@
-# .github/workflows/collect-data.yml
+#.github/workflows/collect-data.yml
 name: Collect Black History Data
 
 on:
