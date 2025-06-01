@@ -1,118 +1,28 @@
 #!/usr/bin/env python3
 """
-Enhanced DignityAI: Layered Analysis System with Chicago Data Integration
-Fixed version with proper Chicago Open Data API integration including zip codes and location data
+Chicago Data Integration Script for DignityAI
+Fixed version without sys arguments and annotations
 """
-import sys
+
 import os
 import json
 import logging
 import requests
 import pandas as pd
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Tuple
-import anthropic
+from typing import Dict, List, Optional, Any
 import time
-import re
 from collections import defaultdict
-import argparse
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
-# Initialize Claude API
-try:
-    client = anthropic.Anthropic(api_key=os.environ.get('CLAUDE_API_KEY') or os.environ.get('ANTHROPIC_API_KEY'))
-    logger.info("✅ Anthropic client initialized successfully")
-except Exception as e:
-    logger.error(f"❌ Failed to initialize Anthropic client: {e}")
-    sys.exit(1)
-
-class EnhancedDignityLensFramework:
-    """Enhanced framework with rich metadata and cross-referencing"""
-    
-    DOMAINS = {
-        "power_structures": {
-            "title": "Power Structures",
-            "question": "Who holds decision-making authority and how is it maintained?",
-            "description": "Government institutions, corporate control, resource allocation, educational systems, media oversight, policy development, community exclusion from decision-making processes",
-            "organizing_focus": "Identifying decision-makers to pressure and systems to challenge"
-        },
-        "control_mechanisms": {
-            "title": "Control Mechanisms", 
-            "question": "How are Black communities contained and suppressed?",
-            "description": "Policing and surveillance systems, legal system manipulation, economic exclusion and exploitation, geographic containment, cultural suppression and narrative control",
-            "organizing_focus": "Understanding how oppression operates to develop counter-strategies"
-        },
-        "community_resistance": {
-            "title": "Community Resistance",
-            "question": "How do Black communities survive and fight back?", 
-            "description": "Organizing strategies and movement building tactics, mutual aid and community care systems, cultural preservation and innovation as resistance",
-            "organizing_focus": "Learning from successful resistance to inform current organizing"
-        },
-        "liberation_strategies": {
-            "title": "Liberation Strategies",
-            "question": "What has actually worked to build Black freedom and power?",
-            "description": "Successful organizing innovations across eras, institution-building and alternative system creation, coalition-building and sustainable organizing approaches",
-            "organizing_focus": "Concrete strategies communities can implement for systematic change"
-        }
-    }
-    
-    HISTORICAL_ERAS = {
-        "era1": {
-            "title": "Enslavement & Early Resistance",
-            "period": "1600s–1865",
-            "description": "Foundation period establishing legal framework for racial oppression and community survival strategies",
-            "key_patterns": ["unpaid labor extraction", "family separation", "underground resistance networks"],
-            "liberation_innovations": ["Underground Railroad", "mutual aid societies", "cultural preservation"]
-        },
-        "era2": {
-            "title": "Reconstruction & Backlash", 
-            "period": "1865–1910",
-            "description": "Brief liberation period followed by systematic legal rollback and organized terror campaigns",
-            "key_patterns": ["democratic participation", "economic advancement", "violent suppression"],
-            "liberation_innovations": ["Black elected officials", "land ownership", "institution building"]
-        },
-        "era3": {
-            "title": "Jim Crow & Black Institution-Building",
-            "period": "1910–1950", 
-            "description": "Codified segregation alongside comprehensive community self-determination efforts",
-            "key_patterns": ["legal segregation", "economic exclusion", "independent institutions"],
-            "liberation_innovations": ["Black Wall Street", "HBCU development", "cultural renaissance"]
-        },
-        "era4": {
-            "title": "Civil Rights & Black Power",
-            "period": "1950–1975",
-            "description": "Mass mobilization period combining integration strategies with revolutionary organizing",
-            "key_patterns": ["direct action", "legal victories", "community control"],
-            "liberation_innovations": ["Freedom Schools", "Black Panther programs", "community organizing"]
-        },
-        "era5": {
-            "title": "Neoliberalization & Mass Incarceration", 
-            "period": "1975–2008",
-            "description": "Policy-based suppression through criminal justice expansion and community disinvestment",
-            "key_patterns": ["carceral control", "economic disinvestment", "cultural appropriation"],
-            "liberation_innovations": ["hip-hop resistance", "community development", "environmental justice"]
-        },
-        "era6": {
-            "title": "Digital Rebellion & Corporate Capture",
-            "period": "2008–2020", 
-            "description": "Social media organizing meets algorithmic control and corporate co-optation of resistance",
-            "key_patterns": ["viral organizing", "platform censorship", "corporate co-optation"],
-            "liberation_innovations": ["#BlackLivesMatter", "community media", "digital organizing"]
-        },
-        "era7": {
-            "title": "Abolitionist Futuring & AI Counterinsurgency",
-            "period": "2020–present",
-            "description": "Community care frameworks emerging alongside technological surveillance expansion",
-            "key_patterns": ["mutual aid networks", "algorithmic bias", "community alternatives"],
-            "liberation_innovations": ["community land trusts", "cooperative economics", "abolition organizing"]
-        }
-    }
-
-class ChicagoDataIntegrator:
-    """Enhanced integration with Chicago Open Data Portal including geographical analysis"""
+class ChicagoDataFetcher:
+    """Fetch and process Chicago Open Data without annotations"""
     
     def __init__(self):
         self.base_url = "https://data.cityofchicago.org/resource/"
@@ -121,106 +31,83 @@ class ChicagoDataIntegrator:
             'User-Agent': 'DignityAI-Research/1.0',
             'Accept': 'application/json'
         })
-        
-        # Chicago neighborhoods and zip codes mapping
-        self.neighborhood_zip_mapping = self._load_chicago_geography()
-        
-    def _load_chicago_geography(self) -> Dict:
-        """Load Chicago neighborhood and zip code data"""
-        try:
-            # Fetch boundaries data
-            url = f"{self.base_url}igwz-8jzy.json"  # Boundaries - ZIP Codes
-            params = {"$limit": 100}
-            response = self.session.get(url, params=params, timeout=30)
-            response.raise_for_status()
-            zip_data = response.json()
-            
-            zip_mapping = {}
-            for item in zip_data:
-                zip_code = item.get('zip', '')
-                if zip_code:
-                    zip_mapping[zip_code] = {
-                        'zip_code': zip_code,
-                        'shape_area': item.get('shape_area', 0),
-                        'shape_length': item.get('shape_leng', 0)
-                    }
-            
-            logger.info(f"✅ Loaded {len(zip_mapping)} ZIP codes from Chicago Open Data")
-            return zip_mapping
-            
-        except Exception as e:
-            logger.error(f"Error loading Chicago geography: {e}")
-            return {}
     
-    def get_police_data_by_location(self, limit: int = 2000) -> Dict:
-        """Fetch police incident data with location breakdown"""
+    def get_police_data(self, limit: int = 1000) -> Dict:
+        """Fetch recent police incident data with location analysis"""
         try:
+            logger.info("🚔 Fetching Chicago police data...")
+            
             url = f"{self.base_url}crimes.json"
             params = {
                 "$limit": limit,
                 "$order": "date DESC",
                 "$where": "date > '2024-01-01T00:00:00.000'",
-                "$select": "date,block,primary_type,description,location_description,arrest,domestic,beat,district,ward,community_area,fbi_code,x_coordinate,y_coordinate,year,updated_on,latitude,longitude,location"
+                "$select": "date,block,primary_type,description,arrest,domestic,beat,district,ward,community_area,latitude,longitude"
             }
+            
             response = self.session.get(url, params=params, timeout=45)
             response.raise_for_status()
             data = response.json()
             
             # Analyze by location
             location_analysis = self._analyze_by_location(data)
-            community_analysis = self._analyze_by_community_area(data)
             
             return {
-                "source": "Chicago Police Incidents - Enhanced Location Analysis",
+                "source": "Chicago Police Incidents - Location Analysis",
                 "total_incidents": len(data),
                 "recent_date": data[0].get('date', 'Unknown') if data else None,
                 "location_breakdown": location_analysis,
-                "community_area_analysis": community_analysis,
-                "sample_data": data[:3] if data else [],
-                "data_fields": list(data[0].keys()) if data else []
+                "sample_data": data[:3] if data else []
             }
+            
         except Exception as e:
-            logger.error(f"Error fetching enhanced police data: {e}")
+            logger.error(f"Error fetching police data: {e}")
             return {"source": "Chicago Police Incidents", "error": str(e)}
     
-    def get_311_data_by_location(self, limit: int = 1500) -> Dict:
+    def get_311_data(self, limit: int = 1000) -> Dict:
         """Fetch 311 service requests with location analysis"""
         try:
+            logger.info("📞 Fetching Chicago 311 data...")
+            
             url = f"{self.base_url}v6vf-nfxy.json"
             params = {
                 "$limit": limit,
                 "$order": "creation_date DESC",
                 "$where": "creation_date > '2024-01-01T00:00:00.000'",
-                "$select": "creation_date,status,completion_date,service_request_number,type_of_service_request,street_address,zip_code,ward,police_district,community_area,ssa,latitude,longitude,location"
+                "$select": "creation_date,status,completion_date,service_request_number,type_of_service_request,street_address,zip_code,ward,police_district,community_area"
             }
+            
             response = self.session.get(url, params=params, timeout=45)
             response.raise_for_status()
             data = response.json()
             
-            # Analyze by zip code and community area
+            # Analyze by zip code
             zip_analysis = self._analyze_by_zip_code(data)
-            service_type_analysis = self._analyze_311_types(data)
+            service_analysis = self._analyze_311_types(data)
             
             return {
                 "source": "Chicago 311 Service Requests - Location Analysis",
                 "total_requests": len(data),
                 "recent_date": data[0].get('creation_date', 'Unknown') if data else None,
                 "zip_code_breakdown": zip_analysis,
-                "service_type_analysis": service_type_analysis,
-                "data_fields": list(data[0].keys()) if data else []
+                "service_type_analysis": service_analysis
             }
+            
         except Exception as e:
-            logger.error(f"Error fetching enhanced 311 data: {e}")
+            logger.error(f"Error fetching 311 data: {e}")
             return {"source": "Chicago 311 Service Requests", "error": str(e)}
     
-    def get_budget_data_enhanced(self) -> Dict:
-        """Fetch Chicago budget information with departmental breakdown"""
+    def get_budget_data(self) -> Dict:
+        """Fetch Chicago budget information"""
         try:
+            logger.info("💰 Fetching Chicago budget data...")
+            
             url = f"{self.base_url}xbkb-dz87.json"
             params = {
-                "$limit": 2000,
+                "$limit": 1500,
                 "$select": "fund,department,appropriation_authority,appropriation_account,appropriation_account_desc,budget_year,budget_amount_thousands"
             }
+            
             response = self.session.get(url, params=params, timeout=45)
             response.raise_for_status()
             data = response.json()
@@ -232,57 +119,12 @@ class ChicagoDataIntegrator:
                 "source": "Chicago Budget Data - Enhanced Analysis",
                 "total_entries": len(data),
                 "department_breakdown": dept_analysis,
-                "sample_allocations": data[:5] if data else [],
-                "data_fields": list(data[0].keys()) if data else []
+                "sample_allocations": data[:3] if data else []
             }
+            
         except Exception as e:
-            logger.error(f"Error fetching enhanced budget data: {e}")
+            logger.error(f"Error fetching budget data: {e}")
             return {"source": "Chicago Budget Data", "error": str(e)}
-    
-    def get_demographics_data(self) -> Dict:
-        """Fetch Chicago demographic data by community area"""
-        try:
-            url = f"{self.base_url}kn9c-c2s2.json"  # Census data by community area
-            params = {"$limit": 100}
-            response = self.session.get(url, params=params, timeout=30)
-            response.raise_for_status()
-            data = response.json()
-            
-            return {
-                "source": "Chicago Demographics by Community Area",
-                "total_areas": len(data),
-                "sample_data": data[:3] if data else [],
-                "data_fields": list(data[0].keys()) if data else []
-            }
-        except Exception as e:
-            logger.error(f"Error fetching demographics data: {e}")
-            return {"source": "Chicago Demographics", "error": str(e)}
-    
-    def get_school_data_by_location(self) -> Dict:
-        """Fetch Chicago school performance data with location analysis"""
-        try:
-            url = f"{self.base_url}9xs2-f89t.json"  # School Progress Reports
-            params = {
-                "$limit": 1000,
-                "$select": "school_id,short_name,primary_category,zip,community_area_number,community_area_name,ward,network,overall_rating,rating_status,student_count_total"
-            }
-            response = self.session.get(url, params=params, timeout=30)
-            response.raise_for_status()
-            data = response.json()
-            
-            # Analyze by location
-            location_analysis = self._analyze_schools_by_location(data)
-            
-            return {
-                "source": "Chicago Schools by Location",
-                "total_schools": len(data),
-                "location_analysis": location_analysis,
-                "sample_data": data[:3] if data else [],
-                "data_fields": list(data[0].keys()) if data else []
-            }
-        except Exception as e:
-            logger.error(f"Error fetching school data: {e}")
-            return {"source": "Chicago Schools", "error": str(e)}
     
     def _analyze_by_location(self, data: List[Dict]) -> Dict:
         """Analyze data by geographic location"""
@@ -310,36 +152,6 @@ class ChicagoDataIntegrator:
             "by_ward": dict(sorted(analysis["by_ward"].items(), key=lambda x: x[1], reverse=True)[:10]),
             "by_community_area": dict(sorted(analysis["by_community_area"].items(), key=lambda x: x[1], reverse=True)[:10])
         }
-    
-    def _analyze_by_community_area(self, data: List[Dict]) -> Dict:
-        """Detailed analysis by community area"""
-        community_stats = defaultdict(lambda: {
-            'total_incidents': 0,
-            'incident_types': defaultdict(int),
-            'arrests': 0,
-            'domestic': 0
-        })
-        
-        for item in data:
-            ca = item.get('community_area')
-            if ca:
-                community_stats[ca]['total_incidents'] += 1
-                
-                primary_type = item.get('primary_type', 'Unknown')
-                community_stats[ca]['incident_types'][primary_type] += 1
-                
-                if item.get('arrest') == 'true':
-                    community_stats[ca]['arrests'] += 1
-                
-                if item.get('domestic') == 'true':
-                    community_stats[ca]['domestic'] += 1
-        
-        # Convert to regular dict and sort
-        sorted_communities = sorted(community_stats.items(), 
-                                   key=lambda x: x[1]['total_incidents'], 
-                                   reverse=True)[:15]
-        
-        return dict(sorted_communities)
     
     def _analyze_by_zip_code(self, data: List[Dict]) -> Dict:
         """Analyze 311 requests by zip code"""
@@ -370,7 +182,7 @@ class ChicagoDataIntegrator:
         # Sort by total requests
         sorted_zips = sorted(zip_analysis.items(), 
                             key=lambda x: x[1]['total_requests'], 
-                            reverse=True)[:20]
+                            reverse=True)[:15]
         
         return dict(sorted_zips)
     
@@ -382,7 +194,7 @@ class ChicagoDataIntegrator:
             type_counts[req_type] += 1
         
         sorted_types = sorted(type_counts.items(), key=lambda x: x[1], reverse=True)
-        return dict(sorted_types[:15])
+        return dict(sorted_types[:10])
     
     def _analyze_budget_by_department(self, data: List[Dict]) -> Dict:
         """Analyze budget allocations by department"""
@@ -400,963 +212,99 @@ class ChicagoDataIntegrator:
         
         # Sort by budget amount
         sorted_depts = sorted(dept_budgets.items(), key=lambda x: x[1], reverse=True)
-        return dict(sorted_depts[:20])
+        return dict(sorted_depts[:15])
     
-    def _analyze_schools_by_location(self, data: List[Dict]) -> Dict:
-        """Analyze school performance by location"""
-        location_analysis = {
-            'by_zip': defaultdict(lambda: {'schools': 0, 'total_students': 0, 'ratings': []}),
-            'by_community_area': defaultdict(lambda: {'schools': 0, 'total_students': 0, 'ratings': []}),
-            'by_ward': defaultdict(lambda: {'schools': 0, 'total_students': 0, 'ratings': []})
-        }
-        
-        for school in data:
-            zip_code = school.get('zip')
-            ca = school.get('community_area_name')
-            ward = school.get('ward')
-            student_count = school.get('student_count_total', 0)
-            rating = school.get('overall_rating')
-            
-            try:
-                student_count = int(student_count) if student_count else 0
-            except (ValueError, TypeError):
-                student_count = 0
-            
-            if zip_code:
-                location_analysis['by_zip'][zip_code]['schools'] += 1
-                location_analysis['by_zip'][zip_code]['total_students'] += student_count
-                if rating:
-                    location_analysis['by_zip'][zip_code]['ratings'].append(rating)
-            
-            if ca:
-                location_analysis['by_community_area'][ca]['schools'] += 1
-                location_analysis['by_community_area'][ca]['total_students'] += student_count
-                if rating:
-                    location_analysis['by_community_area'][ca]['ratings'].append(rating)
-            
-            if ward:
-                location_analysis['by_ward'][ward]['schools'] += 1
-                location_analysis['by_ward'][ward]['total_students'] += student_count
-                if rating:
-                    location_analysis['by_ward'][ward]['ratings'].append(rating)
-        
-        return {k: dict(v) for k, v in location_analysis.items()}
-    
-    def get_comprehensive_chicago_context(self) -> Dict:
-        """Gather comprehensive Chicago data for analysis with location focus"""
-        logger.info("📊 Gathering comprehensive Chicago data context...")
+    def get_comprehensive_chicago_data(self) -> Dict:
+        """Gather comprehensive Chicago data for analysis"""
+        logger.info("📊 Gathering comprehensive Chicago data...")
         
         context = {
             "timestamp": datetime.now().isoformat(),
-            "data_sources": {},
-            "geographic_context": self.neighborhood_zip_mapping
+            "data_sources": {}
         }
         
         try:
-            # Police data with location analysis
-            logger.info("🚔 Fetching police incident data...")
-            context["data_sources"]["police"] = self.get_police_data_by_location()
+            # Police data
+            context["data_sources"]["police"] = self.get_police_data()
             time.sleep(2)
             
-            # 311 data with location analysis
-            logger.info("📞 Fetching 311 service request data...")
-            context["data_sources"]["service_requests"] = self.get_311_data_by_location()
+            # 311 data
+            context["data_sources"]["service_requests"] = self.get_311_data()
             time.sleep(2)
             
             # Budget data
-            logger.info("💰 Fetching budget data...")
-            context["data_sources"]["budget"] = self.get_budget_data_enhanced()
-            time.sleep(2)
-            
-            # Demographics data
-            logger.info("👥 Fetching demographics data...")
-            context["data_sources"]["demographics"] = self.get_demographics_data()
-            time.sleep(2)
-            
-            # School data
-            logger.info("🏫 Fetching school data...")
-            context["data_sources"]["schools"] = self.get_school_data_by_location()
+            context["data_sources"]["budget"] = self.get_budget_data()
             
             logger.info("✅ Chicago data gathering complete")
             
         except Exception as e:
-            logger.error(f"Error gathering Chicago context: {e}")
+            logger.error(f"Error gathering Chicago data: {e}")
             context["error"] = str(e)
         
         return context
 
-class CaseStudyMetadata:
-    """Rich metadata extraction and structuring"""
+def save_chicago_data(data: Dict, filename: str = None) -> str:
+    """Save Chicago data to JSON file"""
+    if not filename:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"chicago_data_{timestamp}.json"
     
-    def __init__(self, case_study_text: str, title: str = ""):
-        self.title = title
-        self.case_study_text = case_study_text
-        self.metadata = self._extract_metadata()
-    
-    def _extract_metadata(self) -> Dict:
-        """Extract structured metadata from case study"""
+    try:
+        # Create output directory
+        os.makedirs('data', exist_ok=True)
+        filepath = os.path.join('data', filename)
         
-        metadata_prompt = f"""
-        Extract structured metadata from this Dignity Lens case study for enhanced analysis:
-
-        CASE STUDY: {self.title}
-        TEXT: {self.case_study_text[:3000]}...
-
-        Return ONLY valid JSON with this structure:
-        {{
-            "historical_era": "Era X: Name (period)",
-            "dignity_domains": ["power_structures", "control_mechanisms", "community_resistance", "liberation_strategies"],
-            "named_entities": {{
-                "people": ["key individuals mentioned"],
-                "organizations": ["organizations, institutions, groups"],
-                "locations": ["cities, neighborhoods, regions"],
-                "events": ["specific events, programs, campaigns"]
-            }},
-            "power_structures": ["who holds power in this case"],
-            "control_mechanisms": ["how communities are suppressed"],
-            "resistance_strategies": ["how communities fought back"],
-            "temporal_markers": ["specific dates, time periods"],
-            "systematic_patterns": ["recurring oppression patterns"],
-            "organizing_opportunities": ["concrete organizing actions"],
-            "cross_references": ["related topics, other case studies"],
-            "emotional_tone": "systematic targeting/community resistance/institutional violence",
-            "current_relevance": "how this connects to contemporary issues"
-        }}
-        """
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
         
-        try:
-            response = client.messages.create(
-                model="claude-3-5-haiku-20241022",
-                max_tokens=1200,
-                temperature=0.1,
-                messages=[{"role": "user", "content": metadata_prompt}]
-            )
-            
-            metadata_text = response.content[0].text.strip()
-            # Extract JSON
-            start = metadata_text.find('{')
-            end = metadata_text.rfind('}') + 1
-            if start != -1 and end != -1:
-                metadata_json = metadata_text[start:end]
-                parsed = json.loads(metadata_json)
-                logger.info(f"✅ Extracted metadata for: {self.title}")
-                return parsed
-            else:
-                logger.warning(f"Could not parse JSON from metadata extraction for: {self.title}")
-                return self._default_metadata()
-                
-        except Exception as e:
-            logger.error(f"Error extracting metadata for {self.title}: {e}")
-            return self._default_metadata()
-    
-    def _default_metadata(self) -> Dict:
-        """Default metadata structure"""
-        return {
-            "historical_era": "Era 7: Contemporary",
-            "dignity_domains": ["power_structures"],
-            "named_entities": {"people": [], "organizations": [], "locations": [], "events": []},
-            "power_structures": [],
-            "control_mechanisms": [],
-            "resistance_strategies": [],
-            "temporal_markers": [],
-            "systematic_patterns": [],
-            "organizing_opportunities": [],
-            "cross_references": [],
-            "emotional_tone": "systematic oppression",
-            "current_relevance": "ongoing patterns"
-        }
-
-class ContextualRetriever:
-    """Enhanced retrieval system with semantic matching"""
-    
-    def __init__(self, case_studies: List[Dict]):
-        self.case_studies = case_studies
-        self.metadata_index = self._build_metadata_index()
-    
-    def _build_metadata_index(self) -> Dict:
-        """Build searchable index from metadata"""
-        index = defaultdict(list)
+        logger.info(f"✅ Chicago data saved to: {filepath}")
+        return filepath
         
-        for i, study in enumerate(self.case_studies):
-            metadata = study.get('metadata', {})
-            
-            # Index by various fields
-            for domain in metadata.get('dignity_domains', []):
-                index[f"domain:{domain}"].append(i)
-            
-            for pattern in metadata.get('systematic_patterns', []):
-                index[f"pattern:{pattern}"].append(i)
-            
-            for org in metadata.get('named_entities', {}).get('organizations', []):
-                index[f"org:{org.lower()}"].append(i)
-            
-            era = metadata.get('historical_era', '')
-            if era:
-                index[f"era:{era}"].append(i)
-        
-        return dict(index)
-    
-    def find_related_studies(self, query: str, query_metadata: Dict = None, limit: int = 3) -> List[Dict]:
-        """Find most relevant case studies for query"""
-        
-        candidates = set()
-        
-        # Semantic keyword matching
-        query_lower = query.lower()
-        keywords = ['police', 'housing', 'education', 'health', 'economic', 'voting', 'surveillance', 'organizing']
-        
-        for keyword in keywords:
-            if keyword in query_lower:
-                for i, study in enumerate(self.case_studies):
-                    study_text = study.get('content', '').lower()
-                    if keyword in study_text:
-                        candidates.add(i)
-        
-        # Metadata-based matching if available
-        if query_metadata:
-            for domain in query_metadata.get('dignity_domains', []):
-                candidates.update(self.metadata_index.get(f"domain:{domain}", []))
-            
-            for pattern in query_metadata.get('systematic_patterns', []):
-                candidates.update(self.metadata_index.get(f"pattern:{pattern}", []))
-        
-        # Score and rank candidates
-        scored_candidates = []
-        for idx in candidates:
-            if idx < len(self.case_studies):
-                study = self.case_studies[idx]
-                score = self._calculate_relevance_score(query, study)
-                scored_candidates.append((score, study))
-        
-        # Return top matches
-        scored_candidates.sort(reverse=True, key=lambda x: x[0])
-        return [study for score, study in scored_candidates[:limit]]
-    
-    def _calculate_relevance_score(self, query: str, study: Dict) -> float:
-        """Calculate relevance score for ranking"""
-        score = 0.0
-        query_words = set(query.lower().split())
-        
-        # Title match
-        title_words = set(study.get('title', '').lower().split())
-        score += len(query_words & title_words) * 2.0
-        
-        # Content match
-        content_words = set(study.get('content', '').lower().split())
-        score += len(query_words & content_words) * 0.1
-        
-        # Metadata relevance
-        metadata = study.get('metadata', {})
-        for entity_list in metadata.get('named_entities', {}).values():
-            entity_words = set(' '.join(entity_list).lower().split())
-            score += len(query_words & entity_words) * 1.5
-        
-        return score
-
-class LayeredAnalysisEngine:
-    """5-layer analysis pipeline for deep systematic analysis"""
-    
-    def __init__(self, framework: EnhancedDignityLensFramework, retriever: ContextualRetriever):
-        self.framework = framework
-        self.retriever = retriever
-        
-    def run_layered_analysis(self, query: str, chicago_data: Dict = None) -> Dict:
-        """Run complete 5-layer analysis pipeline"""
-        
-        logger.info(f"🔍 Starting layered analysis for: {query[:50]}...")
-        
-        # Find related case studies
-        related_studies = self.retriever.find_related_studies(query, limit=3)
-        logger.info(f"📚 Found {len(related_studies)} related case studies")
-        
-        results = {
-            'query': query,
-            'related_studies': [s.get('title', 'Unknown') for s in related_studies],
-            'timestamp': datetime.now().isoformat()
-        }
-        
-        # Layer 1: Theme Identification & Summarization
-        logger.info("🎯 Layer 1: Theme identification...")
-        results['layer1'] = self._layer1_theme_extraction(query, related_studies)
-        time.sleep(2)
-        
-        # Layer 2: Tension & Contradiction Analysis
-        logger.info("⚡ Layer 2: Tension analysis...")
-        results['layer2'] = self._layer2_tension_analysis(query, results['layer1'], related_studies)
-        time.sleep(2)
-        
-        # Layer 3: Power Dynamics Deep Dive
-        logger.info("💪 Layer 3: Power dynamics...")
-        results['layer3'] = self._layer3_power_analysis(query, results['layer1'], results['layer2'], chicago_data)
-        time.sleep(2)
-        
-        # Layer 4: Alternative Interpretations
-        logger.info("🌟 Layer 4: Alternative interpretations...")
-        results['layer4'] = self._layer4_alternative_perspectives(query, results['layer1'], results['layer2'], results['layer3'])
-        time.sleep(2)
-        
-        # Layer 5: Organizing Strategy Synthesis
-        logger.info("🚀 Layer 5: Organizing synthesis...")
-        results['layer5'] = self._layer5_organizing_synthesis(query, results, chicago_data)
-        
-        return results
-    
-    def _layer1_theme_extraction(self, query: str, related_studies: List[Dict]) -> str:
-        """Layer 1: Extract core themes and patterns"""
-        
-        context_text = ""
-        if related_studies:
-            context_text = "\n\nRELATED DIGNITY LENS CASE STUDIES:\n"
-            for study in related_studies:
-                title = study.get('title', 'Unknown Study')
-                content_preview = study.get('content', '')[:500] + "..."
-                context_text += f"\n**{title}:**\n{content_preview}\n"
-        
-        prompt = f"""
-        You are DignityAI conducting Layer 1 Analysis: THEME IDENTIFICATION & SYSTEMATIC PATTERN RECOGNITION
-
-        USER QUERY: {query}
-        {context_text}
-
-        Using the Dignity Lens framework, identify core themes and systematic patterns:
-
-        ## SYSTEMATIC THEMES IDENTIFIED
-        
-        ### Primary Systematic Functions
-        - What systematic functions does this issue serve for maintaining racial oppression?
-        - How does this connect to wealth extraction, social control, or community suppression?
-        - What essential patterns repeat across different contexts and time periods?
-
-        ### Historical Pattern Recognition  
-        - Which of the 7 historical eras show similar patterns to this current issue?
-        - How have the methods evolved while maintaining the same systematic functions?
-        - What resistance strategies from past eras inform current organizing?
-
-        ## DIGNITY LENS DOMAIN MAPPING
-
-        ### Power Structures (Decision-Making Control)
-        - Who holds formal authority over decisions related to this issue?
-        - What institutions, corporations, or networks control resources and policy?
-        - How are communities systematically excluded from decision-making?
-
-        ### Control Mechanisms (Community Suppression)
-        - What specific tactics contain or suppress community power around this issue?
-        - How do these mechanisms appear neutral while producing racial disparities?
-        - What legal, economic, or cultural justifications are used?
-
-        ### Community Resistance (Fighting Back)
-        - How have communities historically resisted this form of oppression?
-        - What current organizing exists around this issue?
-        - What innovations or adaptations are communities developing?
-
-        ### Liberation Strategies (Building Power)
-        - What approaches have successfully built lasting community power around this issue?
-        - How do successful strategies address root causes rather than just symptoms?
-        - What infrastructure or institutions do communities need to control?
-
-        ## CROSS-SYSTEM CONNECTIONS
-        - How does this issue intersect with other forms of systematic oppression?
-        - What institutions work together to maintain these patterns?
-        - Where are the leverage points for community organizing?
-
-        Focus on systematic patterns that reveal how oppression operates and can be challenged.
-        """
-        
-        return self._call_claude(prompt)
-    
-    def _layer2_tension_analysis(self, query: str, layer1_results: str, related_studies: List[Dict]) -> str:
-        """Layer 2: Identify tensions, contradictions, and gaps"""
-        
-        prompt = f"""
-        You are DignityAI conducting Layer 2 Analysis: TENSION & CONTRADICTION IDENTIFICATION
-
-        ORIGINAL QUERY: {query}
-
-        LAYER 1 SYSTEMATIC ANALYSIS:
-        {layer1_results}
-
-        Now identify deep tensions, contradictions, and analytical gaps:
-
-        ## SYSTEMATIC CONTRADICTIONS
-
-        ### Official Narrative vs. Community Reality
-        - How do government/corporate narratives about this issue contradict community experiences?
-        - What "colorblind" or "neutral" language hides systematic targeting?
-        - How do diversity/inclusion efforts mask continued systematic oppression?
-
-        ### Reform vs. Liberation Tensions
-        - How do reform approaches potentially strengthen the systems they claim to fix?
-        - What tensions exist between "fixing" systems vs. building community alternatives?
-        - Where do individual advancement strategies conflict with community liberation?
-
-        ### Historical Pattern Contradictions
-        - How have past "solutions" actually adapted systematic oppression rather than eliminating it?
-        - What resistance strategies have been co-opted or neutralized?
-        - How do communities balance survival needs with liberation goals?
-
-        ## ANALYTICAL GAPS AND SILENCED PERSPECTIVES
-
-        ### Missing Community Voices
-        - Whose perspectives are systematically excluded from mainstream analysis?
-        - How might different community members (age, gender, documentation status) experience this differently?
-        - What organizing knowledge is ignored by academic or policy experts?
-
-        ### Unasked Questions
-        - What questions would communities ask that institutions avoid?
-        - How does focusing on individual cases hide systematic patterns?
-        - What historical context is deliberately omitted from public discussion?
-
-        ### Hidden Power Relationships
-        - What economic interests benefit from maintaining current arrangements?
-        - How do different oppression systems reinforce each other around this issue?
-        - What role do "allies" or "progressive" institutions play in maintaining oppression?
-
-        ## ORGANIZING STRATEGY TENSIONS
-
-        ### Immediate vs. Long-term
-        - How do urgent community needs conflict with long-term liberation strategy?
-        - What compromises do communities face when engaging with oppressive institutions?
-        - How do communities balance harm reduction with systematic transformation?
-
-        ### Coalition vs. Community Control
-        - When do coalition-building efforts dilute community self-determination?
-        - How do communities maintain leadership while building broader alliances?
-        - What tensions exist between different community organizing approaches?
-
-        Reveal contradictions that expose how systematic oppression operates and adapts.
-        """
-        
-        return self._call_claude(prompt)
-    
-    def _layer3_power_analysis(self, query: str, layer1_results: str, layer2_results: str, chicago_data: Dict = None) -> str:
-        """Layer 3: Deep dive into power dynamics and systematic factors"""
-        
-        chicago_context = ""
-        if chicago_data:
-            # Create a more focused summary of Chicago data
-            chicago_summary = self._summarize_chicago_data(chicago_data)
-            chicago_context = f"\n\nCHICAGO DATA CONTEXT:\n{chicago_summary}\n"
-        
-        prompt = f"""
-        You are DignityAI conducting Layer 3 Analysis: POWER DYNAMICS & SYSTEMATIC FACTOR DEEP DIVE
-
-        QUERY: {query}
-
-        PREVIOUS ANALYSIS:
-        Layer 1 Themes: {layer1_results[:1000]}...
-        Layer 2 Tensions: {layer2_results[:1000]}...
-        {chicago_context}
-
-        Conduct deep power analysis revealing how systematic oppression operates:
-
-        ## POWER STRUCTURE MAPPING
-
-        ### Decision-Making Networks
-        - Who are the specific individuals/roles controlling decisions about this issue?
-        - What corporate boards, government agencies, or institutional networks have authority?
-        - How do campaign contributions, lobbying, or personal relationships influence decisions?
-        - Where are communities systematically excluded from decision-making processes?
-
-        ### Economic Power Flows
-        - Who profits from maintaining current arrangements around this issue?
-        - What business models, government contracts, or financial systems depend on oppression?
-        - How do public resources get extracted to benefit private interests?
-        - What economic pressure points could community organizing target?
-
-        ### Ideological Control Systems
-        - How do media, education, or cultural institutions shape narratives about this issue?
-        - What research institutions, think tanks, or experts legitimize oppressive policies?
-        - How do religious, professional, or community institutions reinforce systematic inequality?
-
-        ## SYSTEMATIC REPRODUCTION MECHANISMS
-
-        ### Legal and Policy Infrastructure
-        - What laws, regulations, or policies create and maintain systematic disparities?
-        - How do different government levels coordinate to maintain oppression?
-        - What enforcement patterns reveal systematic rather than individual bias?
-        - How do policy "reforms" actually strengthen systematic oppression?
-
-        ### Institutional Coordination
-        - How do different institutions (police, schools, hospitals, courts) work together?
-        - What data sharing, referral systems, or coordination mechanisms exist?
-        - How do ostensibly separate systems create cumulative oppression?
-        - Where do institutional failures serve systematic functions?
-
-        ### Cultural and Ideological Reproduction
-        - How do dominant narratives justify systematic inequality as natural or merit-based?
-        - What cultural symbols, language, or practices normalize oppression?
-        - How do "colorblind" ideologies hide systematic targeting?
-        - What role do aspirational narratives play in maintaining systematic inequality?
-
-        ## VULNERABILITY POINTS FOR ORGANIZING
-
-        ### System Dependencies
-        - What resources, legitimacy sources, or relationships do oppressive systems require?
-        - Where are the critical infrastructure points that organizing could disrupt?
-        - What contradictions make systems vulnerable to community pressure?
-
-        ### Power Concentration Points
-        - Where is decision-making most concentrated and potentially influenceable?
-        - What electoral, budget, or policy cycles create organizing opportunities?
-        - How could communities build counter-power to challenge existing arrangements?
-
-        Focus on actionable power analysis that reveals specific organizing targets and strategies.
-        """
-        
-        return self._call_claude(prompt)
-    
-    def _layer4_alternative_perspectives(self, query: str, layer1: str, layer2: str, layer3: str) -> str:
-        """Layer 4: Generate alternative interpretations and implications"""
-        
-        prompt = f"""
-        You are DignityAI conducting Layer 4 Analysis: ALTERNATIVE PERSPECTIVES & INTERPRETATIONS
-
-        QUERY: {query}
-
-        PREVIOUS LAYERS SUMMARY:
-        - Layer 1 identified systematic themes and patterns
-        - Layer 2 revealed tensions and contradictions  
-        - Layer 3 mapped power dynamics and vulnerability points
-
-        Now explore alternative interpretations and implications:
-
-        ## COMMUNITY-CENTERED REFRAMING
-
-        ### From Community Organizing Perspective
-        - How would experienced community organizers interpret this issue differently than academics or policymakers?
-        - What would communities prioritize that institutions ignore or minimize?
-        - How does lived experience reveal aspects invisible to external analysis?
-        - What organizing wisdom challenges mainstream "expert" interpretations?
-
-        ### From Different Community Positions
-        - How might this issue affect differently positioned community members (age, gender, documentation status, disability, sexuality)?
-        - What perspectives from elders who lived through different historical eras inform current analysis?
-        - How do youth organizers see possibilities that older approaches might miss?
-        - What do directly affected community members understand that others don't?
-
-        ## HISTORICAL ALTERNATIVE INTERPRETATIONS
-
-        ### Suppressed Historical Narratives
-        - What community resistance stories have been erased from dominant historical accounts?
-        - How would centering community agency change the interpretation of historical events?
-        - What liberation strategies were tried but aren't discussed in mainstream analysis?
-        - How does international or global context change understanding of local struggles?
-
-        ### Counter-Historical Analysis
-        - What if historical "progress" narratives actually describe successful systematic adaptation?
-        - How might apparent "failures" of resistance movements actually represent successful community preservation?
-        - What victories are invisible when using institutions' success metrics rather than community-defined measures?
-
-        ## LIBERATION-CENTERED IMPLICATIONS
-
-        ### If Communities Had Full Power
-        - How would communities organize this issue if they controlled all relevant institutions?
-        - What would community-controlled alternatives to current systems look like?
-        - How might liberation frameworks completely redefine the problem and solutions?
-        - What possibilities emerge when starting from community self-determination rather than institutional reform?
-
-        ### Systematic Transformation Scenarios
-        - How might addressing this issue catalyze broader systematic transformation?
-        - What ripple effects could successful community organizing create across other issues?
-        - How could local community victories connect to regional, national, or international liberation movements?
-        - What new contradictions might emerge if communities built significant power around this issue?
-
-        ## STRATEGIC IMPLICATIONS FOR ORGANIZING
-
-        ### Overlooked Opportunities
-        - What organizing opportunities become visible from community-centered perspective?
-        - How might different timeframes (immediate, medium-term, generational) reveal different strategic possibilities?
-        - What alliance or coalition possibilities are missed by single-issue approaches?
-        - How could communities turn apparent weaknesses into organizing strengths?
-
-        ### Innovation Potential
-        - What new organizing approaches might this analysis suggest?
-        - How could technology, cultural work, or economic organizing be combined in novel ways?
-        - What can communities learn from resistance movements in other contexts or historical periods?
-        - How might intersectional approaches reveal strategic innovations?
-
-        Center community wisdom and liberation potential rather than institutional limitations.
-        """
-        
-        return self._call_claude(prompt)
-    
-    def _layer5_organizing_synthesis(self, query: str, all_results: Dict, chicago_data: Dict = None) -> str:
-        """Layer 5: Synthesize into concrete organizing strategy"""
-        
-        chicago_context = ""
-        if chicago_data:
-            chicago_summary = self._summarize_chicago_data(chicago_data)
-            chicago_context = f"\n\nCHICAGO ORGANIZING CONTEXT:\n{chicago_summary}\n"
-        
-        synthesis_prompt = f"""
-        You are DignityAI conducting Layer 5 Analysis: ORGANIZING STRATEGY SYNTHESIS
-
-        ORIGINAL QUERY: {query}
-
-        COMPREHENSIVE ANALYSIS SUMMARY:
-        - Layer 1: Identified systematic themes and Dignity Lens domain mapping
-        - Layer 2: Revealed systematic contradictions and analytical gaps
-        - Layer 3: Mapped power structures and vulnerability points
-        - Layer 4: Explored alternative community-centered interpretations
-        {chicago_context}
-
-        Synthesize into concrete organizing strategy and action plan:
-
-        ## STRATEGIC ORGANIZING ANALYSIS
-
-        ### Root Cause Targeting
-        - Based on the analysis, what are the 2-3 most important systematic causes to target?
-        - How do these root causes connect across multiple issues and institutions?
-        - What organizing approach addresses causes rather than just symptoms?
-        - How can communities build power to transform systematic arrangements rather than just win individual victories?
-
-        ### Power Building Strategy
-        - What specific decision-makers, institutions, or systems should organizing target?
-        - How can communities build sufficient power to force systematic change?
-        - What combinations of tactics (electoral, direct action, economic, cultural) are most strategic?
-        - How can organizing build lasting community power rather than just campaign victories?
-
-        ### Community Control Framework
-        - What would community control look like for this issue?
-        - How can organizing build toward community-controlled alternatives to oppressive systems?
-        - What institutions or infrastructure do communities need to control?
-        - How can immediate organizing contribute to long-term liberation goals?
-
-        ## CONCRETE ORGANIZING ACTION PLAN
-
-        ### Immediate Actions (Next 30 days)
-        - What 3-5 specific actions can individuals or small groups take immediately?
-        - How can people connect with existing organizing around this issue?
-        - What research, relationship-building, or skill-development should begin now?
-        - How can immediate actions contribute to longer-term organizing strategy?
-
-        ### Medium-Term Campaigns (3-6 months)
-        - What organizing campaigns should communities launch or join?
-        - How can communities build coalitions while maintaining community leadership?
-        - What policy, electoral, or institutional targets are most strategic?
-        - How can campaigns build organizing capacity and community power?
-
-        ### Long-Term Power Building (6+ months)
-        - What systematic changes should organizing work toward?
-        - How can communities build permanent infrastructure for ongoing organizing?
-        - What liberation strategies from other movements can inform this work?
-        - How does this organizing connect to broader community liberation goals?
-
-        ## CHICAGO-SPECIFIC ORGANIZING OPPORTUNITIES
-
-        ### Local Power Structures
-        - Which Chicago aldermen, city departments, or institutions should organizing target?
-        - How can communities use Chicago's political structures for organizing leverage?
-        - What upcoming elections, budget cycles, or policy decisions create opportunities?
-        - How can organizing address this issue while building broader community power in Chicago?
-
-        ### Coalition and Movement Building
-        - What existing Chicago organizations are working on related issues?
-        - How can communities build cross-neighborhood and cross-issue coalitions?
-        - What opportunities exist for connecting local organizing to state or national movements?
-        - How can organizing maintain community leadership while building broader alliances?
-
-        ### Community-Controlled Alternatives
-        - What community-controlled alternatives to oppressive systems can Chicago communities build?
-        - How can organizing create infrastructure that serves immediate needs while building long-term power?
-        - What resources, skills, or partnerships do communities need to develop alternatives?
-        - How can alternative institution-building become organizing strategy rather than just service provision?
-
-        ## SUCCESS METRICS AND EVALUATION
-
-        ### Community Power Indicators
-        - How will communities know if organizing is building genuine power rather than just symbolic victories?
-        - What changes in community capacity, leadership, or self-determination indicate success?
-        - How can communities measure progress toward liberation goals rather than just policy wins?
-        - What feedback systems ensure organizing remains accountable to community needs?
-
-        ### Systematic Change Measures
-        - What changes in institutional behavior, resource allocation, or decision-making indicate systematic impact?
-        - How can communities track whether organizing is addressing root causes or just symptoms?
-        - What indicators show that systematic oppression is being disrupted rather than just reformed?
-        - How can evaluation help organizing adapt strategy while maintaining liberation goals?
-
-        ## CONCLUSION: FROM ANALYSIS TO LIBERATION
-
-        ### Key Strategic Insight
-        - What is the most important strategic insight from this comprehensive analysis?
-        - How does this organizing opportunity connect to broader liberation goals?
-        - What makes this organizing approach different from typical reform efforts?
-
-        ### Immediate Next Steps
-        - What are the 3 most important actions people can take this week?
-        - How can people connect with existing organizing or begin building new organizing?
-        - What resources, contacts, or information do people need to get started?
-
-        ### Long-Term Vision
-        - How does organizing around this issue contribute to community liberation and self-determination?
-        - What would systematic transformation look like for this issue?
-        - How can this organizing help build the world communities need and deserve?
-
-        Transform systematic analysis into concrete organizing that builds community power for liberation.
-        """
-        
-        return self._call_claude(synthesis_prompt, max_tokens=4000)
-    
-    def _summarize_chicago_data(self, chicago_data: Dict) -> str:
-        """Create focused summary of Chicago data for analysis"""
-        summary = "CHICAGO DATA SUMMARY:\n"
-        
-        try:
-            data_sources = chicago_data.get('data_sources', {})
-            
-            # Police data summary
-            if 'police' in data_sources:
-                police = data_sources['police']
-                summary += f"• Police: {police.get('total_incidents', 0)} incidents\n"
-                if 'location_breakdown' in police:
-                    top_districts = list(police['location_breakdown'].get('by_district', {}).items())[:3]
-                    summary += f"  Top districts: {top_districts}\n"
-            
-            # 311 data summary
-            if 'service_requests' in data_sources:
-                sr = data_sources['service_requests']
-                summary += f"• 311 Requests: {sr.get('total_requests', 0)} requests\n"
-                if 'zip_code_breakdown' in sr:
-                    top_zips = list(sr['zip_code_breakdown'].keys())[:3]
-                    summary += f"  Top zip codes: {top_zips}\n"
-            
-            # Budget summary
-            if 'budget' in data_sources:
-                budget = data_sources['budget']
-                summary += f"• Budget: {budget.get('total_entries', 0)} line items\n"
-                if 'department_breakdown' in budget:
-                    top_depts = list(budget['department_breakdown'].keys())[:3]
-                    summary += f"  Top departments: {top_depts}\n"
-            
-        except Exception as e:
-            summary += f"Error summarizing data: {e}\n"
-        
-        return summary
-    
-    def _call_claude(self, prompt: str, max_tokens: int = 3000) -> str:
-        """Call Claude API with retry logic"""
-        try:
-            response = client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=max_tokens,
-                temperature=0.3,
-                messages=[{"role": "user", "content": prompt}]
-            )
-            return response.content[0].text
-        except Exception as e:
-            logger.error(f"Claude API error: {e}")
-            return f"Analysis unavailable due to API error: {str(e)}"
-
-class CaseStudyDatabase:
-    """Sample case studies for demonstration"""
-    
-    SAMPLE_STUDIES = [
-        {
-            "title": "Chicago Police Surveillance Network",
-            "content": """The Chicago Police Department operates one of the most extensive surveillance networks in the United States, with over 32,000 cameras connected to the Array of Things sensor network. This system, justified as crime prevention, systematically monitors Black and Latino neighborhoods while being largely absent from affluent white areas. The surveillance infrastructure integrates facial recognition, license plate readers, and gunshot detection systems that disproportionately flag residents in communities of color as suspicious. Community organizing groups like the Stop Police Surveillance Coalition have documented how this technology criminalizes daily life activities, with predictive policing algorithms directing police attention to areas where communities of color live, work, and organize. The surveillance system serves multiple systematic functions: it provides justification for increased policing budgets, creates data that supports narratives of community pathology, and intimidates residents from engaging in political organizing or community building activities.""",
-            "era": "Era 7: Contemporary",
-            "domains": ["power_structures", "control_mechanisms"]
-        },
-        {
-            "title": "Chicago School Closures and Community Resistance",
-            "content": """In 2013, Chicago Public Schools announced the closure of 50 schools, the largest mass closure in U.S. history, with 88% of affected students being Black. The closures were justified through "efficiency" rhetoric and standardized test scores, but community analysis revealed the systematic targeting of communities where residents were organizing against gentrification and demanding community investment. Parents, students, and community organizations like the Chicago Teachers Union and Journey for Justice organized sustained resistance, including school occupations, hunger strikes, and policy advocacy. The organizing revealed how school closures served multiple systematic functions: weakening community institutions that anchor neighborhoods, creating real estate opportunities for developers, and disrupting intergenerational networks that support community organizing. The resistance developed innovative strategies including community-controlled schools, participatory budgeting processes, and coalition building that connected education organizing to broader community control movements.""",
-            "era": "Era 6: Digital Rebellion",
-            "domains": ["control_mechanisms", "community_resistance", "liberation_strategies"]
-        },
-        {
-            "title": "Housing Court and Displacement System",
-            "content": """Chicago's housing court system processes over 40,000 eviction cases annually, with Black women representing the majority of defendants despite comprising only 15% of the city's population. The court system operates as a displacement mechanism, with judges processing cases in under 2 minutes on average and tenants rarely having legal representation. Landlords use the court system strategically to pressure tenants who organize for better conditions or who might resist rent increases associated with gentrification. Community organizations like the Metropolitan Tenants Organization and Chicago Anti-Eviction Campaign have organized tenant unions, court watching programs, and policy campaigns to challenge systematic displacement. Their organizing revealed how housing court connects to broader systems: credit reporting agencies that create permanent housing barriers, police who enforce evictions, and social services that become overwhelmed when families lose housing. The resistance has developed community-controlled alternatives including tenant unions, community land trusts, and mutual aid networks that provide immediate support while building long-term community power.""",
-            "era": "Era 7: Contemporary",
-            "domains": ["power_structures", "control_mechanisms", "community_resistance", "liberation_strategies"]
-        }
-    ]
-    
-    def get_case_studies(self) -> List[Dict]:
-        """Return processed case studies with metadata"""
-        processed_studies = []
-        
-        for study in self.SAMPLE_STUDIES:
-            # Add metadata extraction
-            metadata_extractor = CaseStudyMetadata(study["content"], study["title"])
-            study["metadata"] = metadata_extractor.metadata
-            processed_studies.append(study)
-        
-        return processed_studies
-
-class DignityAIInterface:
-    """Main interface for running DignityAI analysis"""
-    
-    def __init__(self):
-        self.framework = EnhancedDignityLensFramework()
-        self.chicago_data = ChicagoDataIntegrator()
-        self.case_db = CaseStudyDatabase()
-        
-        # Initialize components
-        self.case_studies = self.case_db.get_case_studies()
-        self.retriever = ContextualRetriever(self.case_studies)
-        self.analysis_engine = LayeredAnalysisEngine(self.framework, self.retriever)
-    
-    def run_analysis(self, query: str, include_chicago_data: bool = True) -> Dict:
-        """Run complete DignityAI analysis"""
-        
-        print(f"\n🔥 DignityAI Analysis Starting...")
-        print(f"Query: {query}")
-        print(f"{'='*60}")
-        
-        # Gather Chicago context if requested
-        chicago_context = None
-        if include_chicago_data:
-            chicago_context = self.chicago_data.get_comprehensive_chicago_context()
-        
-        # Run layered analysis
-        results = self.analysis_engine.run_layered_analysis(query, chicago_context)
-        
-        return results
-    
-    def display_results(self, results: Dict) -> None:
-        """Display analysis results in formatted output"""
-        
-        print(f"\n{'='*80}")
-        print(f"🎯 DIGNITYAI COMPLETE ANALYSIS RESULTS")
-        print(f"{'='*80}")
-        
-        print(f"\n📋 QUERY: {results['query']}")
-        print(f"🕒 TIMESTAMP: {results['timestamp']}")
-        
-        if results.get('related_studies'):
-            print(f"\n📚 RELATED CASE STUDIES:")
-            for study in results['related_studies']:
-                print(f"  • {study}")
-        
-        print(f"\n🎯 LAYER 1: THEME IDENTIFICATION")
-        print(f"{'-'*50}")
-        print(results.get('layer1', 'No analysis available'))
-        
-        print(f"\n⚡ LAYER 2: TENSION ANALYSIS")
-        print(f"{'-'*50}")
-        print(results.get('layer2', 'No analysis available'))
-        
-        print(f"\n💪 LAYER 3: POWER DYNAMICS")
-        print(f"{'-'*50}")
-        print(results.get('layer3', 'No analysis available'))
-        
-        print(f"\n🌟 LAYER 4: ALTERNATIVE PERSPECTIVES")
-        print(f"{'-'*50}")
-        print(results.get('layer4', 'No analysis available'))
-        
-        print(f"\n🚀 LAYER 5: ORGANIZING SYNTHESIS")
-        print(f"{'-'*50}")
-        print(results.get('layer5', 'No analysis available'))
-        
-        print(f"\n{'='*80}")
-        print(f"✊ ANALYSIS COMPLETE - ORGANIZE FOR LIBERATION")
-        print(f"{'='*80}")
-    
-    def save_results(self, results: Dict, filename: str = None) -> str:
-        """Save analysis results to JSON file"""
-        
-        if not filename:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"dignityai_analysis_{timestamp}.json"
-        
-        try:
-            with open(filename, 'w', encoding='utf-8') as f:
-                json.dump(results, f, indent=2, ensure_ascii=False)
-            
-            logger.info(f"✅ Results saved to: {filename}")
-            return filename
-            
-        except Exception as e:
-            logger.error(f"Error saving results: {e}")
-            return ""
+    except Exception as e:
+        logger.error(f"Error saving Chicago data: {e}")
+        return ""
 
 def main():
     """Main execution function"""
-    
-    parser = argparse.ArgumentParser(description="DignityAI: Systematic Racism Analysis for Community Organizing")
-    parser.add_argument("query", help="Analysis query about systematic racism or organizing")
-    parser.add_argument("--no-chicago", action="store_true", help="Skip Chicago data integration")
-    parser.add_argument("--save", type=str, help="Save results to specified filename")
-    parser.add_argument("--quiet", action="store_true", help="Minimal output")
-    
-    args = parser.parse_args()
-    
-    # Check for API key
-    if not os.environ.get('CLAUDE_API_KEY') and not os.environ.get('ANTHROPIC_API_KEY'):
-        print("❌ Error: CLAUDE_API_KEY or ANTHROPIC_API_KEY environment variable not set")
-        print("Please set your Anthropic API key:")
-        print("export CLAUDE_API_KEY='your-api-key-here'")
-        sys.exit(1)
-    
     try:
-        # Initialize DignityAI
-        dignity_ai = DignityAIInterface()
+        logger.info("🚀 Starting Chicago data collection...")
         
-        # Run analysis
-        include_chicago = not args.no_chicago
-        results = dignity_ai.run_analysis(args.query, include_chicago_data=include_chicago)
+        # Initialize data fetcher
+        fetcher = ChicagoDataFetcher()
         
-        # Display results
-        if not args.quiet:
-            dignity_ai.display_results(results)
+        # Gather comprehensive data
+        chicago_data = fetcher.get_comprehensive_chicago_data()
         
-        # Save results if requested
-        if args.save:
-            dignity_ai.save_results(results, args.save)
+        # Save data
+        saved_file = save_chicago_data(chicago_data)
         
-        print("\n✊ Power to the People - Organize for Liberation!")
+        # Print summary
+        print("\n" + "="*60)
+        print("📊 CHICAGO DATA COLLECTION COMPLETE")
+        print("="*60)
         
-    except KeyboardInterrupt:
-        print("\n\n🛑 Analysis interrupted by user")
-        sys.exit(0)
+        data_sources = chicago_data.get('data_sources', {})
+        
+        if 'police' in data_sources:
+            police = data_sources['police']
+            print(f"🚔 Police: {police.get('total_incidents', 0)} incidents")
+        
+        if 'service_requests' in data_sources:
+            sr = data_sources['service_requests']
+            print(f"📞 311 Requests: {sr.get('total_requests', 0)} requests")
+        
+        if 'budget' in data_sources:
+            budget = data_sources['budget']
+            print(f"💰 Budget: {budget.get('total_entries', 0)} line items")
+        
+        print(f"💾 Data saved to: {saved_file}")
+        print("="*60)
+        
+        logger.info("✅ Chicago data collection completed successfully")
+        
     except Exception as e:
-        logger.error(f"Error running DignityAI: {e}")
-        print(f"❌ Error: {e}")
-        sys.exit(1)
-
-def interactive_mode():
-    """Interactive mode for multiple queries"""
-    
-    print("🔥 DignityAI Interactive Mode")
-    print("Enter queries to analyze systematic racism and organizing strategies")
-    print("Type 'quit' to exit\n")
-    
-    dignity_ai = DignityAIInterface()
-    
-    while True:
-        try:
-            query = input("🎯 Enter your analysis query: ").strip()
-            
-            if query.lower() in ['quit', 'exit', 'q']:
-                break
-            
-            if not query:
-                continue
-            
-            print("\n" + "="*60)
-            results = dignity_ai.run_analysis(query)
-            dignity_ai.display_results(results)
-            
-            save_option = input("\n💾 Save results? (y/n): ").strip().lower()
-            if save_option == 'y':
-                filename = dignity_ai.save_results(results)
-                print(f"✅ Saved to: {filename}")
-            
-            print("\n" + "="*60)
-            
-        except KeyboardInterrupt:
-            break
-        except Exception as e:
-            print(f"❌ Error: {e}")
-            continue
-    
-    print("\n✊ Keep organizing for liberation!")
+        logger.error(f"❌ Error in main execution: {e}")
+        raise
 
 if __name__ == "__main__":
-    if len(sys.argv) == 1:
-        # No arguments provided, run interactive mode
-        interactive_mode()
-    else:
-        # Arguments provided, run command line mode
-        main()
+    main()
