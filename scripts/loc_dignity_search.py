@@ -1,66 +1,77 @@
-from flask import Flask, jsonify
+# scripts/fetch_loc.py
+import os
+import hashlib
+import time
 import requests
+from datetime import datetime
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-import os
 
-app = Flask(__name__)
-
-# Base LOC Search URL
+# Same base URL and keywords
 BASE_URL = "https://www.loc.gov/collections/?q="
-
-# Safe keyword list
 KEYWORDS = [
-    "slavery",
-    "enslaved people",
-    "slave",
-    "plantation",
-    "African Americans",
-    "freedmen",
-    "reconstruction",
-    "emancipation",
-    "civil rights",
-    "abolition",
-    "underground railroad",
-    "black history",
-    "negro",
-    "colored people",
-    "jim crow",
-    "segregation"
+    "slavery","enslaved people","slave","plantation","African Americans",
+    "freedmen","reconstruction","emancipation","civil rights","abolition",
+    "underground railroad","black history","negro","colored people","jim crow","segregation"
 ]
 
-# Setup requests session with retries
+# Set up session with retry logic
 session = requests.Session()
 retries = Retry(
-    total=5,
-    backoff_factor=1,
-    status_forcelist=[500, 502, 503, 504],
+    total=5, backoff_factor=1,
+    status_forcelist=[500,502,503,504],
     allowed_methods=["GET"]
 )
 adapter = HTTPAdapter(max_retries=retries)
 session.mount("http://", adapter)
 session.mount("https://", adapter)
 
-def fetch_loc_data(keyword, page=1):
-    try:
+def fetch_results(keyword, max_pages=1):
+    items = []
+    for page in range(1, max_pages + 1):
         url = f"{BASE_URL}{requests.utils.quote(keyword)}&sp={page}&fo=json"
-        response = session.get(url, timeout=15)
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        return {"error": str(e)}
+        try:
+            resp = session.get(url, timeout=15)
+            resp.raise_for_status()
+            data = resp.json().get("results", [])
+            if not data:
+                break
+            items.extend(data)
+            time.sleep(1)
+        except Exception as e:
+            print(f"Error fetching {keyword} page {page}: {e}")
+            break
+    return items
 
-@app.route("/")
-def index():
-    return "✅ Library of Congress Content Fetcher is running."
+def sanitize_title(title):
+    safe = "".join(c for c in title if c.isalnum() or c in (" ", "-", "_")).strip()
+    return safe.replace(" ", "-")[:50]
 
-@app.route("/fetch/<keyword>")
-def fetch_keyword(keyword):
-    if keyword not in KEYWORDS:
-        return jsonify({"error": "❌ Keyword not in allowed list"}), 400
-    data = fetch_loc_data(keyword)
-    return jsonify(data)
+def save_items(keyword, items):
+    POSTS_DIR = "_posts"
+    os.makedirs(POSTS_DIR, exist_ok=True)
+    date_str = datetime.utcnow().strftime("%Y-%m-%d")
+
+    for idx, item in enumerate(items):
+        title = item.get("title", "Untitled")
+        url = item.get("url", "")
+        desc = item.get("description", ["No description"])[0]
+        uid = hashlib.md5(url.encode()).hexdigest()[:8]
+        filename = f"{POSTS_DIR}/{date_str}-{sanitize_title(title)}-{uid}.md"
+        if not os.path.exists(filename):
+            with open(filename, "w", encoding="utf-8") as f:
+                f.write(f"---\n")
+                f.write(f"title: \"{title}\"\n")
+                f.write(f"date: {date_str}\n")
+                f.write(f"source: \"{url}\"\n")
+                f.write(f"keyword: \"{keyword}\"\n")
+                f.write(f"---\n\n")
+                f.write(desc)
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    app.run(host="0.0.0.0", port=port)
+    # For each keyword, fetch first page and save (change max_pages as needed)
+    for kw in KEYWORDS:
+        print(f"Fetching keyword: {kw}")
+        results = fetch_results(kw, max_pages=2)
+        save_items(kw, results)
+    print("Done fetching and saving LOC data.")
