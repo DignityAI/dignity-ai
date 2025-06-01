@@ -1,61 +1,84 @@
-import requests, hashlib, time, os
-import psycopg2
-from urllib.parse import quote
-from datetime import datetime
+import requests
+import time
+import json
+import os
 
-BASE_URL = "https://www.loc.gov/photos/?fo=json&q="
+BASE_URL = "https://www.loc.gov/search/?q="
+BATCH_SIZE = 50  # <-- pull 10 pages per keyword per run
+PROGRESS_FILE = "loc_progress.json"
+OUTPUT_DIR = "_posts"
 
 KEYWORDS = [
-    "slavery", "enslaved people", "slave", "plantation", "African Americans",
-    "freedmen", "reconstruction", "emancipation", "civil rights", "abolition",
-    "underground railroad", "black history", "negro", "colored people",
-    "jim crow", "segregation"
+    "slavery",
+    "enslaved people",
+    "slave",
+    "plantation",
+    "African Americans",
+    "freedmen",
+    "reconstruction",
+    "emancipation",
+    "civil rights",
+    "abolition",
+    "underground railroad",
+    "black history",
+    "negro",
+    "colored people",
+    "jim crow",
+    "segregation",
 ]
 
-DB_CONFIG = {
-    "dbname": os.getenv("POSTGRES_DB"),
-    "user": os.getenv("POSTGRES_USER"),
-    "password": os.getenv("POSTGRES_PASSWORD"),
-    "host": os.getenv("POSTGRES_HOST"),
-    "port": os.getenv("POSTGRES_PORT", 5432),
-}
-
-def hash_url(url): return hashlib.md5(url.encode()).hexdigest()[:10]
-
-def fetch_items(keyword, max_pages=2):
-    results = []
-    for page in range(1, max_pages + 1):
-        url = f"{BASE_URL}{quote(keyword)}&sp={page}"
+def safe_get(url, retries=3, backoff=5):
+    for attempt in range(retries):
         try:
-            print(f"Fetching: {url}")
-            res = requests.get(url, timeout=30)
-            res.raise_for_status()
-            page_results = res.json().get("results", [])
-            results.extend(page_results)
-            time.sleep(2)
-        except Exception as e:
-            print(f"Error fetching {keyword} page {page}: {e}")
-            break
-    return results
+            resp = requests.get(url, timeout=30)
+            resp.raise_for_status()
+            return resp
+        except (requests.exceptions.RequestException) as e:
+            print(f"Request failed ({e}), retry {attempt+1}/{retries} in {backoff}s")
+            time.sleep(backoff)
+    raise Exception(f"Failed to fetch URL after {retries} retries: {url}")
 
-def insert_into_db(items, keyword):
-    with psycopg2.connect(**DB_CONFIG) as conn:
-        with conn.cursor() as cur:
-            for item in items:
-                title = item.get("title")
-                url = item.get("url")
-                thumb = item.get("image", {}).get("full") or ""
-                loc_id = hash_url(url)
+def load_progress():
+    if os.path.exists(PROGRESS_FILE):
+        with open(PROGRESS_FILE, "r") as f:
+            return json.load(f)
+    return {}
 
-                cur.execute("""
-                    INSERT INTO loc_items (id, keyword, title, url, thumbnail, created_at)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (id) DO NOTHING;
-                """, (loc_id, keyword, title, url, thumb, datetime.utcnow()))
-        conn.commit()
-        print(f"Inserted {len(items)} items for '{keyword}'")
+def save_progress(progress):
+    with open(PROGRESS_FILE, "w") as f:
+        json.dump(progress, f, indent=2)
+
+def save_post(content, keyword, page, index):
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    filename = f"{OUTPUT_DIR}/2025-06-01-[{keyword.replace(' ', '-')}-page{page}-item{index}].md"
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(content)
+
+def parse_and_save_items(html_content, keyword, page):
+    # TODO: Adjust parsing depending on LOC HTML structure.
+    # For demo, save entire page content as one post.
+    save_post(html_content, keyword, page, 1)
+
+def fetch_batch_for_keyword(keyword, start_page):
+    for page in range(start_page, start_page + BATCH_SIZE):
+        url = f"{BASE_URL}{requests.utils.quote(keyword)}&sp={page}"
+        print(f"Fetching {url}")
+        response = safe_get(url)
+        if "No results found" in response.text:
+            print(f"No more results for '{keyword}' at page {page}. Stopping.")
+            return page - 1  # last page with results
+        parse_and_save_items(response.text, keyword, page)
+        time.sleep(2)  # polite delay between requests
+    return start_page + BATCH_SIZE - 1
+
+def main():
+    progress = load_progress()
+    for keyword in KEYWORDS:
+        last_page = progress.get(keyword, 0)
+        print(f"Processing '{keyword}', starting from page {last_page + 1}")
+        new_last_page = fetch_batch_for_keyword(keyword, last_page + 1)
+        progress[keyword] = new_last_page
+        save_progress(progress)
 
 if __name__ == "__main__":
-    for kw in KEYWORDS:
-        data = fetch_items(kw, max_pages=2)
-        insert_into_db(data, kw)
+    main()
