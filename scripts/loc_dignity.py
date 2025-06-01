@@ -1,113 +1,96 @@
+# scripts/fetch_loc_combined.py
 import os
-import requests
 import hashlib
-from urllib.parse import quote
-from pathlib import Path
+import time
+import requests
 from datetime import datetime
-import yaml
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
-# Use same keywords as original
+BASE_URL = "https://www.loc.gov/collections/?q="
 KEYWORDS = [
-    "slavery",
-    "enslaved people",
-    "slave",
-    "plantation",
-    "African Americans",
-    "freedmen",
-    "reconstruction",
-    "emancipation",
-    "civil rights",
-    "abolition",
-    "underground railroad",
-    "black history",
-    "negro",
-    "colored people",
-    "jim crow",
-    "segregation"
+    "slavery","enslaved people","slave","plantation","African Americans",
+    "freedmen","reconstruction","emancipation","civil rights","abolition",
+    "underground railroad","black history","negro","colored people","jim crow","segregation"
 ]
 
-# Output directories
-POSTS_DIR = Path("_posts/images")
-IMAGES_DIR = Path("assets/images/loc-images")
-POSTS_DIR.mkdir(parents=True, exist_ok=True)
-IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+session = requests.Session()
+retries = Retry(
+    total=5, backoff_factor=1,
+    status_forcelist=[500,502,503,504],
+    allowed_methods=["GET"]
+)
+adapter = HTTPAdapter(max_retries=retries)
+session.mount("http://", adapter)
+session.mount("https://", adapter)
 
-# LOC search URL
-BASE_URL = "https://www.loc.gov/search/"
-
-HEADERS = {
-    "User-Agent": "LOC-Image-Fetcher (+https://yourdomain.com)"
-}
-
-def fetch_results(keyword, page=1):
-    url = f"{BASE_URL}?q={quote(keyword)}&fo=json&sp={page}"
-    try:
-        response = requests.get(url, headers=HEADERS, timeout=20)
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        print(f"[ERROR] Fetch failed for {keyword} page {page}: {e}")
-        return None
-
-def download_image(image_url, identifier):
-    try:
-        ext = image_url.split(".")[-1].split("?")[0].split("&")[0]
-        filename = f"{identifier}.{ext}"
-        filepath = IMAGES_DIR / filename
-
-        response = requests.get(image_url, timeout=20)
-        response.raise_for_status()
-
-        with open(filepath, "wb") as f:
-            f.write(response.content)
-        return str(filepath)
-    except Exception as e:
-        print(f"[WARNING] Failed to download image: {e}")
-        return None
-
-def sanitize_filename(title):
-    return "".join(c if c.isalnum() or c in "-_" else "-" for c in title.lower()).strip("-")
-
-def write_post(title, description, image_path, loc_url):
-    date = datetime.now().strftime("%Y-%m-%d")
-    identifier = sanitize_filename(title)[:50]
-    hash_id = hashlib.md5(title.encode()).hexdigest()[:8]
-    filename = f"{date}-{identifier}-{hash_id}.md"
-    post_path = POSTS_DIR / filename
-
-    frontmatter = {
-        "title": title,
-        "description": description,
-        "image": "/" + image_path.replace("\\", "/"),
-        "source": loc_url,
-        "tags": ["library of congress", "black history", "image", "liberation"],
-    }
-
-    content = f"---\n{yaml.dump(frontmatter)}---\n\n{description or ''}"
-    with open(post_path, "w", encoding="utf-8") as f:
-        f.write(content)
-
-def fetch_images_for_keyword(keyword):
-    print(f"[INFO] Fetching: {keyword}")
-    for page in range(1, 3):  # limit to 2 pages per keyword
-        data = fetch_results(keyword, page)
-        if not data or "results" not in data:
+def fetch_results(keyword, max_pages=2):
+    items = []
+    for page in range(1, max_pages + 1):
+        url = f"{BASE_URL}{requests.utils.quote(keyword)}&sp={page}&fo=json"
+        try:
+            resp = session.get(url, timeout=15)
+            resp.raise_for_status()
+            data = resp.json().get("results", [])
+            if not data:
+                break
+            items.extend(data)
+            time.sleep(1)
+        except Exception as e:
+            print(f"Error fetching {keyword} page {page}: {e}")
             break
+    return items
 
-        for item in data["results"]:
-            if not item.get("image"):
-                continue
+def sanitize_title(title):
+    safe = "".join(c for c in title if c.isalnum() or c in (" ", "-", "_")).strip()
+    return safe.replace(" ", "-")[:50]
 
-            image_url = item["image"][0]
-            title = item.get("title", "Untitled")
-            description = item.get("description", [""])[0]
-            loc_url = item.get("url", "")
+def save_text_and_images(keyword, items):
+    POSTS_DIR = "_posts"
+    IMAGES_DIR = "images"
+    os.makedirs(POSTS_DIR, exist_ok=True)
+    os.makedirs(IMAGES_DIR, exist_ok=True)
+    date_str = datetime.utcnow().strftime("%Y-%m-%d")
 
-            identifier = hashlib.md5(title.encode()).hexdigest()[:10]
-            image_path = download_image(image_url, identifier)
-            if image_path:
-                write_post(title, description, image_path, loc_url)
+    for item in items:
+        title = item.get("title", "Untitled")
+        url = item.get("url", "")
+        desc = item.get("description", ["No description"])[0]
+        uid = hashlib.md5(url.encode()).hexdigest()[:8]
+        filename = f"{POSTS_DIR}/{date_str}-{sanitize_title(title)}-{uid}.md"
+
+        # Write markdown file if doesn't exist
+        if not os.path.exists(filename):
+            with open(filename, "w", encoding="utf-8") as f:
+                f.write(f"---\n")
+                f.write(f"title: \"{title}\"\n")
+                f.write(f"date: {date_str}\n")
+                f.write(f"source: \"{url}\"\n")
+                f.write(f"keyword: \"{keyword}\"\n")
+                f.write(f"---\n\n")
+                f.write(desc + "\n\n")
+
+                # Save image links (if any)
+                images = item.get("image", [])
+                if images:
+                    for idx, img in enumerate(images):
+                        img_url = img.get("src") or img.get("url")
+                        if not img_url:
+                            continue
+                        try:
+                            img_resp = session.get(img_url, timeout=15)
+                            img_resp.raise_for_status()
+                            ext = img_url.split(".")[-1].split("?")[0]  # crude extension
+                            img_filename = f"{IMAGES_DIR}/{date_str}-{uid}-{idx}.{ext}"
+                            with open(img_filename, "wb") as img_file:
+                                img_file.write(img_resp.content)
+                            f.write(f"![image-{idx}]({img_filename})\n")
+                        except Exception as e:
+                            print(f"Failed to download image {img_url}: {e}")
 
 if __name__ == "__main__":
-    for keyword in KEYWORDS:
-        fetch_images_for_keyword(keyword)
+    for kw in KEYWORDS:
+        print(f"Fetching keyword: {kw}")
+        results = fetch_results(kw, max_pages=2)
+        save_text_and_images(kw, results)
+    print("Done fetching text and images.")
