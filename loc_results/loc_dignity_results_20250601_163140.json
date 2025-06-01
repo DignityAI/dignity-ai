@@ -1,0 +1,29 @@
+{
+  "generated_at": "2025-06-01T16:31:40.790145",
+  "search_type": "dignity_lens_historical",
+  "periods": [
+    "slave_era",
+    "reconstruction"
+  ],
+  "domains": [
+    "power_structures",
+    "control_mechanisms",
+    "community_resistance",
+    "liberation_strategies"
+  ],
+  "total_items": 0,
+  "results": {
+    "slave_era": {
+      "power_structures": [],
+      "control_mechanisms": [],
+      "community_resistance": [],
+      "liberation_strategies": []
+    },
+    "reconstruction": {
+      "power_structures": [],
+      "control_mechanisms": [],
+      "community_resistance": [],
+      "liberation_strategies": []
+    }
+  }
+}
