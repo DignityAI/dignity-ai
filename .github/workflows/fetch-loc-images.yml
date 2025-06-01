@@ -1,0 +1,36 @@
+name: Fetch LOC Images
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * *"  # Runs daily at 4:00 UTC
+
+jobs:
+  fetch-loc-images:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run LOC image script
+        run: python scripts/fetch_loc_images.py
+
+      - name: Commit and push new posts
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add _posts/
+          git add assets/images/loc-images/
+          git commit -m "📸 Auto-update LOC image posts"
+          git push
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
