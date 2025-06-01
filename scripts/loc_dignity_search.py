@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-Standalone Library of Congress API Integration for DignityAI
-Designed to work with separate Claude workflows
-Searches Black history materials across Dignity Lens domains (slave era & reconstruction)
+Simple Library of Congress Data Scraper
+Just collects and saves raw historical data - no processing
 """
 
 import requests
@@ -18,361 +17,232 @@ from urllib.parse import quote
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-class LOCDiginityAPI:
-    """Library of Congress API client for Dignity Lens historical research"""
+class SimpleLOCScraper:
+    """Simple Library of Congress data scraper - just collect raw data"""
     
     def __init__(self):
         self.base_url = "https://www.loc.gov/search/"
         self.api_params = {
             'fo': 'json',  # JSON format
-            'at': '!online-format:image,audio',  # Exclude images and audio for text analysis
+            'at': '!online-format:image,audio',  # Text content only
             'c': 50,  # Results per page
         }
         
-        # Dignity Lens Domain Keywords
-        self.domain_keywords = {
-            "power_structures": [
-                "plantation owner", "slave master", "overseer", "government", "legislation",
-                "congress", "senate", "president", "governor", "mayor", "official",
-                "authority", "control", "decision", "policy", "law", "regulation",
-                "institution", "administration", "bureaucracy", "leadership"
-            ],
-            "control_mechanisms": [
-                "slave patrol", "fugitive slave", "black codes", "jim crow", "lynching",
-                "violence", "punishment", "surveillance", "restriction", "prohibition",
-                "segregation", "discrimination", "exclusion", "containment", "suppression",
-                "enforcement", "police", "military", "terror", "intimidation"
-            ],
-            "community_resistance": [
-                "underground railroad", "rebellion", "revolt", "resistance", "escape",
-                "organize", "organizing", "protest", "strike", "boycott", "petition",
-                "mutual aid", "church", "community", "network", "coalition",
-                "freedom", "liberation", "rights", "activism", "movement"
-            ],
-            "liberation_strategies": [
-                "abolition", "emancipation", "reconstruction", "civil rights", "education",
-                "institution building", "economic development", "political participation",
-                "voting", "representation", "leadership", "organization", "strategy",
-                "success", "victory", "achievement", "progress", "advancement"
-            ]
-        }
-        
-        # Historical period search terms
-        self.period_terms = {
-            "slave_era": [
-                "slavery", "enslaved", "slave", "plantation", "antebellum",
-                "1619", "1776", "1800", "1820", "1840", "1850", "1860",
-                "colonial", "revolutionary", "early republic"
-            ],
-            "reconstruction": [
-                "reconstruction", "freedmen", "freedpeople", "emancipation",
-                "thirteenth amendment", "fourteenth amendment", "fifteenth amendment",
-                "1865", "1866", "1867", "1868", "1869", "1870", "1871", "1872", "1873", "1874", "1875", "1876", "1877",
-                "freedmens bureau", "black codes", "carpetbagger", "scalawag"
-            ]
-        }
-        
-        # Subject areas to focus on
-        self.subject_areas = [
-            "African Americans", "slavery", "slaves", "freedmen", "plantation",
-            "civil rights", "abolition", "emancipation", "reconstruction",
-            "black history", "negro", "colored", "freedpeople"
+        # Simple search terms for Black history
+        self.search_terms = [
+            "slavery",
+            "enslaved people", 
+            "slave",
+            "plantation",
+            "African Americans",
+            "freedmen",
+            "reconstruction", 
+            "emancipation",
+            "civil rights",
+            "abolition",
+            "underground railroad",
+            "black history",
+            "negro",
+            "colored people",
+            "jim crow",
+            "segregation"
         ]
 
-    def build_search_query(self, domain, period, additional_terms=None):
-        """Build targeted search query for specific domain and period"""
-        domain_terms = self.domain_keywords.get(domain, [])
-        period_terms = self.period_terms.get(period, [])
+    def search_loc(self, query, max_results=100):
+        """Search Library of Congress and return raw results"""
+        all_items = []
+        start = 1
         
-        # Combine terms strategically
-        core_terms = []
-        
-        # Add subject area
-        core_terms.extend(["African Americans", "slavery", "slaves"])
-        
-        # Add period-specific terms
-        if period_terms:
-            core_terms.extend(period_terms[:3])  # Top 3 period terms
-        
-        # Add domain-specific terms
-        if domain_terms:
-            core_terms.extend(domain_terms[:5])  # Top 5 domain terms
-        
-        # Add any additional terms
-        if additional_terms:
-            core_terms.extend(additional_terms)
-        
-        # Create search query
-        query = ' OR '.join([f'"{term}"' for term in core_terms[:10]])  # Limit to 10 terms max
-        
-        return query
-
-    def search_loc(self, query, start=1, count=50):
-        """Execute search against Library of Congress API"""
-        try:
-            params = self.api_params.copy()
-            params.update({
-                'q': query,
-                'sp': start,
-                'c': count
-            })
-            
-            logger.info(f"Searching LOC with query: {query[:100]}...")
-            
-            response = requests.get(self.base_url, params=params, timeout=30)
-            response.raise_for_status()
-            
-            data = response.json()
-            
-            # Add delay to be respectful of API
-            time.sleep(1)
-            
-            return data
-            
-        except Exception as e:
-            logger.error(f"Error searching LOC: {e}")
-            return None
-
-    def extract_relevant_content(self, item):
-        """Extract relevant text content from LOC item"""
-        content = {
-            'title': '',
-            'description': '',
-            'subjects': [],
-            'date': '',
-            'url': '',
-            'type': '',
-            'contributors': [],
-            'full_text': ''
-        }
-        
-        try:
-            # Basic metadata
-            content['title'] = item.get('title', [''])[0] if item.get('title') else ''
-            content['description'] = item.get('description', [''])[0] if item.get('description') else ''
-            content['date'] = item.get('date', [''])[0] if item.get('date') else ''
-            content['url'] = item.get('id', '')
-            content['type'] = item.get('original_format', [''])[0] if item.get('original_format') else ''
-            
-            # Subjects and contributors
-            content['subjects'] = item.get('subject', []) or []
-            content['contributors'] = item.get('contributor', []) or []
-            
-            # Try to get full text if available
-            if 'text' in item:
-                content['full_text'] = ' '.join(item['text']) if isinstance(item['text'], list) else str(item['text'])
-            
-            # Combine available text for analysis
-            text_parts = [
-                content['title'],
-                content['description'],
-                ' '.join(content['subjects']),
-                content['full_text']
-            ]
-            
-            content['combined_text'] = ' '.join([part for part in text_parts if part]).strip()
-            
-            return content
-            
-        except Exception as e:
-            logger.error(f"Error extracting content: {e}")
-            return content
-
-    def assess_content_relevance(self, content, domain, period):
-        """Assess how relevant content is to specified domain and period"""
-        text = content.get('combined_text', '').lower()
-        
-        if not text or len(text) < 50:
-            return {'relevant': False, 'reason': 'Insufficient text content'}
-        
-        # Check for period relevance
-        period_terms = self.period_terms.get(period, [])
-        period_matches = sum(1 for term in period_terms if term.lower() in text)
-        
-        # Check for domain relevance
-        domain_terms = self.domain_keywords.get(domain, [])
-        domain_matches = sum(1 for term in domain_terms if term.lower() in text)
-        
-        # Check for general African American history relevance
-        aa_terms = ['african american', 'negro', 'colored', 'black', 'slave', 'enslaved', 'freedmen', 'freedpeople']
-        aa_matches = sum(1 for term in aa_terms if term in text)
-        
-        total_score = period_matches + domain_matches + aa_matches
-        
-        if total_score >= 3 and len(text) >= 100:
-            return {
-                'relevant': True, 
-                'score': total_score,
-                'period_matches': period_matches,
-                'domain_matches': domain_matches,
-                'aa_matches': aa_matches,
-                'text_length': len(text)
-            }
-        else:
-            return {
-                'relevant': False, 
-                'reason': f'Low relevance score: {total_score} (need >= 3)',
-                'score': total_score
-            }
-
-    def search_domain_period(self, domain, period, max_results=25):
-        """Search for materials in specific domain and period"""
-        logger.info(f"🔍 Searching {domain} + {period}...")
-        
-        query = self.build_search_query(domain, period)
-        results = self.search_loc(query, count=max_results * 2)  # Get extra to filter
-        
-        if not results or 'results' not in results:
-            logger.warning(f"No results for {domain} + {period}")
-            return []
-        
-        relevant_items = []
-        
-        for item in results['results'][:max_results * 2]:
-            content = self.extract_relevant_content(item)
-            relevance = self.assess_content_relevance(content, domain, period)
-            
-            if relevance['relevant']:
-                content['relevance_score'] = relevance
-                relevant_items.append(content)
+        while len(all_items) < max_results:
+            try:
+                params = self.api_params.copy()
+                params.update({
+                    'q': query,
+                    'sp': start,
+                    'c': min(50, max_results - len(all_items))
+                })
                 
-                if len(relevant_items) >= max_results:
+                logger.info(f"Searching LOC: '{query}' (page {start//50 + 1})")
+                
+                response = requests.get(self.base_url, params=params, timeout=30)
+                response.raise_for_status()
+                
+                data = response.json()
+                
+                if 'results' not in data or not data['results']:
                     break
+                
+                all_items.extend(data['results'])
+                start += 50
+                
+                # Be nice to the API
+                time.sleep(1)
+                
+                # If we got fewer results than requested, we're done
+                if len(data['results']) < 50:
+                    break
+                    
+            except Exception as e:
+                logger.error(f"Error searching '{query}': {e}")
+                break
         
-        logger.info(f"✅ Found {len(relevant_items)} relevant items for {domain} + {period}")
-        return relevant_items
+        logger.info(f"Found {len(all_items)} items for '{query}'")
+        return all_items
 
-    def generate_comprehensive_search(self):
-        """Generate comprehensive search across all domains and periods"""
-        all_results = {}
+    def clean_item_data(self, item):
+        """Extract useful data from LOC item"""
+        cleaned = {}
         
-        domains = list(self.domain_keywords.keys())
-        periods = list(self.period_terms.keys())
-        
-        total_searches = len(domains) * len(periods)
-        search_count = 0
-        
-        for period in periods:
-            all_results[period] = {}
+        try:
+            # Basic info
+            cleaned['id'] = item.get('id', '')
+            cleaned['title'] = item.get('title', [''])[0] if item.get('title') else ''
+            cleaned['date'] = item.get('date', [''])[0] if item.get('date') else ''
+            cleaned['description'] = item.get('description', [''])[0] if item.get('description') else ''
             
-            for domain in domains:
-                search_count += 1
-                logger.info(f"🔍 Search {search_count}/{total_searches}: {period} × {domain}")
-                
-                results = self.search_domain_period(domain, period, max_results=15)
-                all_results[period][domain] = results
-                
-                # Be respectful of API
-                time.sleep(2)
-        
-        return all_results
+            # Subjects and topics
+            cleaned['subjects'] = item.get('subject', []) or []
+            cleaned['contributors'] = item.get('contributor', []) or []
+            cleaned['creators'] = item.get('creator', []) or []
+            
+            # Format and type
+            cleaned['format'] = item.get('original_format', [''])[0] if item.get('original_format') else ''
+            cleaned['type'] = item.get('type', [''])[0] if item.get('type') else ''
+            
+            # Location info
+            cleaned['location'] = item.get('location', []) or []
+            cleaned['online_format'] = item.get('online_format', []) or []
+            
+            # URLs and access
+            cleaned['url'] = item.get('id', '')
+            cleaned['permalink'] = item.get('permalink', '')
+            
+            # Any text content
+            if 'text' in item:
+                if isinstance(item['text'], list):
+                    cleaned['text_content'] = ' '.join(item['text'])
+                else:
+                    cleaned['text_content'] = str(item['text'])
+            else:
+                cleaned['text_content'] = ''
+            
+            # Combine searchable text
+            text_parts = [
+                cleaned['title'],
+                cleaned['description'], 
+                ' '.join(cleaned['subjects']),
+                cleaned['text_content']
+            ]
+            cleaned['full_text'] = ' '.join([part for part in text_parts if part]).strip()
+            
+            return cleaned
+            
+        except Exception as e:
+            logger.error(f"Error cleaning item data: {e}")
+            return {}
 
-    def save_results(self, results, filename=None):
-        """Save search results to JSON file"""
-        if not filename:
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            filename = f'loc_dignity_results_{timestamp}.json'
+    def scrape_all_terms(self, items_per_term=50):
+        """Scrape data for all search terms"""
+        all_data = {}
         
+        for term in self.search_terms:
+            logger.info(f"🔍 Scraping: {term}")
+            
+            raw_results = self.search_loc(term, max_results=items_per_term)
+            
+            # Clean the data
+            cleaned_items = []
+            for item in raw_results:
+                cleaned = self.clean_item_data(item)
+                if cleaned and len(cleaned.get('full_text', '')) > 50:  # Only keep items with some content
+                    cleaned_items.append(cleaned)
+            
+            all_data[term] = cleaned_items
+            logger.info(f"✅ Saved {len(cleaned_items)} items for '{term}'")
+            
+            # Be extra nice to the API
+            time.sleep(2)
+        
+        return all_data
+
+    def save_data(self, data):
+        """Save scraped data to files"""
         # Create output directory
-        os.makedirs('loc_results', exist_ok=True)
-        filepath = os.path.join('loc_results', filename)
+        os.makedirs('loc_data', exist_ok=True)
         
-        # Add metadata
-        output = {
-            'generated_at': datetime.now().isoformat(),
-            'search_type': 'dignity_lens_historical',
-            'periods': list(self.period_terms.keys()),
-            'domains': list(self.domain_keywords.keys()),
-            'total_items': sum(len(items) for period in results.values() for items in period.values()),
-            'results': results
-        }
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(output, f, indent=2, ensure_ascii=False)
+        # Save complete dataset
+        filename = f'loc_data/loc_black_history_{timestamp}.json'
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump({
+                'scraped_at': datetime.now().isoformat(),
+                'search_terms': list(data.keys()),
+                'total_items': sum(len(items) for items in data.values()),
+                'data': data
+            }, f, indent=2, ensure_ascii=False)
         
-        logger.info(f"💾 Results saved to: {filepath}")
-        return filepath
-
-    def create_summary_report(self, results):
-        """Create summary report of findings"""
-        report_lines = [
-            "# Library of Congress Dignity Lens Search Results",
-            f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        logger.info(f"💾 Complete dataset saved: {filename}")
+        
+        # Save summary report
+        summary_lines = [
+            f"# Library of Congress Black History Data",
+            f"**Scraped**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            f"**Total Items**: {sum(len(items) for items in data.values())}",
             "",
-            "## Search Overview",
-            "Searched Library of Congress digital collections for Black history materials",
-            "focusing on slave era (1619-1865) and reconstruction (1865-1877) periods",
-            "across four Dignity Lens domains.",
-            ""
+            "## Items by Search Term:",
         ]
         
-        # Summary statistics
-        total_items = 0
-        for period_name, period_data in results.items():
-            report_lines.append(f"### {period_name.replace('_', ' ').title()}")
-            period_total = 0
-            
-            for domain_name, domain_items in period_data.items():
-                item_count = len(domain_items)
-                period_total += item_count
-                total_items += item_count
-                
-                report_lines.append(f"- **{domain_name.replace('_', ' ').title()}**: {item_count} items")
-            
-            report_lines.append(f"- **Period Total**: {period_total} items")
-            report_lines.append("")
+        for term, items in data.items():
+            summary_lines.append(f"- **{term}**: {len(items)} items")
         
-        report_lines.extend([
-            f"## Total Items Found: {total_items}",
+        summary_lines.extend([
             "",
-            "## Next Steps",
-            "1. Review JSON results file for detailed item data",
-            "2. Send relevant items to Claude for Dignity Lens analysis",
-            "3. Generate case studies and educational content",
-            "4. Build community organizing materials from historical insights",
-            "",
-            "---",
-            "*Generated by DignityAI Library of Congress Integration*"
+            "## Sample Items:",
         ])
         
-        return '\n'.join(report_lines)
+        # Add sample items
+        for term, items in data.items():
+            if items:
+                sample = items[0]
+                summary_lines.extend([
+                    f"### {term}",
+                    f"**Title**: {sample.get('title', 'N/A')}",
+                    f"**Date**: {sample.get('date', 'N/A')}",
+                    f"**Description**: {sample.get('description', 'N/A')[:200]}...",
+                    ""
+                ])
+        
+        summary_file = f'loc_data/summary_{timestamp}.md'
+        with open(summary_file, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(summary_lines))
+        
+        logger.info(f"📋 Summary saved: {summary_file}")
+        
+        return filename, summary_file
 
 def main():
-    """Main execution function"""
-    logger.info("🚀 Starting Library of Congress Dignity Lens search...")
+    """Main scraping function"""
+    logger.info("🚀 Starting Library of Congress data scraping...")
     
-    # Initialize API client
-    loc_client = LOCDiginityAPI()
+    scraper = SimpleLOCScraper()
     
-    # Perform comprehensive search
-    logger.info("📚 Searching across all domains and periods...")
-    results = loc_client.generate_comprehensive_search()
+    # Scrape all the data
+    logger.info("📚 Scraping historical data...")
+    data = scraper.scrape_all_terms(items_per_term=30)  # 30 items per term to start
     
-    # Save results
-    logger.info("💾 Saving results...")
-    results_file = loc_client.save_results(results)
+    # Save everything
+    logger.info("💾 Saving data...")
+    data_file, summary_file = scraper.save_data(data)
     
-    # Create summary report
-    logger.info("📊 Creating summary report...")
-    summary = loc_client.create_summary_report(results)
+    # Print summary
+    total_items = sum(len(items) for items in data.values())
+    logger.info(f"✅ Scraping complete!")
+    logger.info(f"📊 Total items collected: {total_items}")
+    logger.info(f"📁 Data saved to: {data_file}")
+    logger.info(f"📋 Summary: {summary_file}")
     
-    # Save summary
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    summary_file = f'loc_results/summary_report_{timestamp}.md'
-    with open(summary_file, 'w', encoding='utf-8') as f:
-        f.write(summary)
-    
-    logger.info(f"📋 Summary saved to: {summary_file}")
-    
-    # Print summary to console
-    print("\n" + "="*60)
-    print(summary)
-    print("="*60)
-    
-    logger.info("✅ Library of Congress search complete!")
-    logger.info(f"📁 Check the loc_results/ directory for:")
-    logger.info(f"   - {results_file}")
-    logger.info(f"   - {summary_file}")
+    print(f"\n🎉 Successfully scraped {total_items} historical items from Library of Congress!")
 
 if __name__ == "__main__":
     main()
