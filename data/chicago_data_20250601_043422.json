@@ -1,0 +1,125 @@
+{
+  "timestamp": "2025-06-01T04:34:14.383115",
+  "data_sources": {
+    "police": {
+      "source": "Chicago Police Incidents - Location Analysis",
+      "total_incidents": 1000,
+      "recent_date": "2025-05-23T00:00:00.000",
+      "location_breakdown": {
+        "by_beat": {
+          "0124": 13,
+          "1834": 12,
+          "0111": 11,
+          "0123": 10,
+          "0831": 10,
+          "1831": 10,
+          "0423": 10,
+          "1832": 9,
+          "1121": 9,
+          "1224": 9
+        },
+        "by_district": {
+          "012": 71,
+          "001": 70,
+          "008": 68,
+          "019": 62,
+          "006": 62,
+          "004": 57,
+          "011": 55,
+          "002": 53,
+          "003": 52,
+          "018": 51,
+          "025": 47,
+          "009": 44,
+          "010": 41,
+          "005": 40,
+          "007": 40,
+          "016": 34,
+          "024": 33,
+          "022": 33,
+          "014": 27,
+          "015": 25,
+          "017": 22,
+          "020": 12,
+          "031": 1
+        },
+        "by_ward": {
+          "28": 63,
+          "27": 54,
+          "42": 46,
+          "6": 43,
+          "4": 36,
+          "9": 36,
+          "21": 36,
+          "7": 31,
+          "34": 30,
+          "8": 29
+        },
+        "by_community_area": {
+          "28": 55,
+          "32": 45,
+          "25": 45,
+          "8": 45,
+          "6": 29,
+          "43": 29,
+          "23": 28,
+          "24": 28,
+          "44": 27,
+          "71": 26
+        }
+      },
+      "sample_data": [
+        {
+          "date": "2025-05-23T00:00:00.000",
+          "block": "048XX S CORNELL AVE",
+          "primary_type": "THEFT",
+          "description": "THEFT FROM MOTOR VEHICLE",
+          "arrest": false,
+          "domestic": false,
+          "beat": "0222",
+          "district": "002",
+          "ward": "4",
+          "community_area": "39",
+          "latitude": "41.80724961",
+          "longitude": "-87.588539121"
+        },
+        {
+          "date": "2025-05-23T00:00:00.000",
+          "block": "013XX S LOOMIS ST",
+          "primary_type": "CRIMINAL DAMAGE",
+          "description": "TO VEHICLE",
+          "arrest": false,
+          "domestic": false,
+          "beat": "1233",
+          "district": "012",
+          "ward": "28",
+          "community_area": "28",
+          "latitude": "41.864544223",
+          "longitude": "-87.661500368"
+        },
+        {
+          "date": "2025-05-23T00:00:00.000",
+          "block": "057XX W BERENICE AVE",
+          "primary_type": "CRIMINAL DAMAGE",
+          "description": "TO VEHICLE",
+          "arrest": false,
+          "domestic": false,
+          "beat": "1633",
+          "district": "016",
+          "ward": "38",
+          "community_area": "15",
+          "latitude": "41.95038566",
+          "longitude": "-87.770559998"
+        }
+      ]
+    },
+    "service_requests": {
+      "source": "Chicago 311 Service Requests",
+      "error": "400 Client Error: Bad Request for url: https://data.cityofchicago.org/resource/v6vf-nfxy.json?%24limit=1000&%24order=creation_date+DESC&%24where=creation_date+%3E+%272024-01-01T00%3A00%3A00.000%27&%24select=creation_date%2Cstatus%2Ccompletion_date%2Cservice_request_number%2Ctype_of_service_request%2Cstreet_address%2Czip_code%2Cward%2Cpolice_district%2Ccommunity_area"
+    },
+    "budget": {
+      "source": "Chicago Budget Data",
+      "error": "404 Client Error: Not Found for url: https://data.cityofchicago.org/resource/xbkb-dz87.json?%24limit=1500&%24select=fund%2Cdepartment%2Cappropriation_authority%2Cappropriation_account%2Cappropriation_account_desc%2Cbudget_year%2Cbudget_amount_thousands"
+    }
+  }
+}
