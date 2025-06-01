@@ -6,4 +6,3 @@ pandas
 frontmatter
 dotenv
 dateutil
-artifact
