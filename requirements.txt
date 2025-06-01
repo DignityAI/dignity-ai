@@ -6,4 +6,4 @@ beautifulsoup4
 pandas
 frontmatter
 dotenv
-dateutil
+python-dateutil
