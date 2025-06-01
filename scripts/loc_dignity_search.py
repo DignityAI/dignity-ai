@@ -1,98 +1,84 @@
-import os
-import json
-import time
 import requests
-from urllib.parse import quote_plus
-from datetime import datetime
-from pathlib import Path
+import time
+import json
+import os
 
-# === Keywords for Black History-related LOC search ===
-SEARCH_TERMS = [
-    "slavery", "enslaved people", "slave", "plantation",
-    "African Americans", "freedmen", "reconstruction", "emancipation",
-    "civil rights", "abolition", "underground railroad", "black history",
-    "negro", "colored people", "jim crow", "segregation"
+BASE_URL = "https://www.loc.gov/search/?q="
+BATCH_SIZE = 10  # <-- pull 10 pages per keyword per run
+PROGRESS_FILE = "loc_progress.json"
+OUTPUT_DIR = "_posts"
+
+KEYWORDS = [
+    "slavery",
+    "enslaved people",
+    "slave",
+    "plantation",
+    "African Americans",
+    "freedmen",
+    "reconstruction",
+    "emancipation",
+    "civil rights",
+    "abolition",
+    "underground railroad",
+    "black history",
+    "negro",
+    "colored people",
+    "jim crow",
+    "segregation",
 ]
 
-# === Output folder for content ===
-OUTPUT_DIR = Path("data/loc")
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+def safe_get(url, retries=3, backoff=5):
+    for attempt in range(retries):
+        try:
+            resp = requests.get(url, timeout=30)
+            resp.raise_for_status()
+            return resp
+        except (requests.exceptions.RequestException) as e:
+            print(f"Request failed ({e}), retry {attempt+1}/{retries} in {backoff}s")
+            time.sleep(backoff)
+    raise Exception(f"Failed to fetch URL after {retries} retries: {url}")
 
-# === Constants for Library of Congress API ===
-BASE_URL = "https://www.loc.gov/search/"
-ITEMS_PER_PAGE = 100  # Max allowed
+def load_progress():
+    if os.path.exists(PROGRESS_FILE):
+        with open(PROGRESS_FILE, "r") as f:
+            return json.load(f)
+    return {}
 
-# === Robust fetch function with retries and streaming ===
-def fetch_with_retries(url, max_retries=3, backoff_factor=1):
-    session = requests.Session()
-    retries = requests.adapters.Retry(
-        total=max_retries,
-        backoff_factor=backoff_factor,
-        status_forcelist=[500, 502, 503, 504],
-        raise_on_status=False,
-    )
-    adapter = requests.adapters.HTTPAdapter(max_retries=retries)
-    session.mount("https://", adapter)
-    session.mount("http://", adapter)
+def save_progress(progress):
+    with open(PROGRESS_FILE, "w") as f:
+        json.dump(progress, f, indent=2)
 
-    try:
-        response = session.get(url, timeout=20, stream=True)
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        print(f"[ERROR] Fetch failed: {e}")
-        return None
-
-# === Format LOC result to Markdown ===
-def format_markdown(item):
-    title = item.get("title", "Untitled")
-    date = item.get("date", "")
-    url = item.get("url", "")
-    description = item.get("description", "")
-    return f"""---
-title: "{title}"
-date: {date}
-source: "{url}"
----
-
-**Description:** {description}
-"""
-
-# === Save result to file ===
-def save_item(item, term, index):
-    safe_title = item.get("title", f"{term}-{index}")[:50].replace(" ", "_").replace("/", "-")
-    filename = OUTPUT_DIR / f"{term.replace(' ', '_')}_{index}.md"
-    content = format_markdown(item)
+def save_post(content, keyword, page, index):
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    filename = f"{OUTPUT_DIR}/2025-06-01-[{keyword.replace(' ', '-')}-page{page}-item{index}].md"
     with open(filename, "w", encoding="utf-8") as f:
         f.write(content)
-    print(f"[SAVED] {filename}")
 
-# === Main loop for all keywords ===
-for term in SEARCH_TERMS:
-    print(f"\n[SEARCHING] '{term}'")
-    page = 1
-    total_found = 0
+def parse_and_save_items(html_content, keyword, page):
+    # TODO: Adjust parsing depending on LOC HTML structure.
+    # For demo, save entire page content as one post.
+    save_post(html_content, keyword, page, 1)
 
-    while True:
-        url = f"{BASE_URL}?q={quote_plus(term)}&fo=json&sp={page}&c={ITEMS_PER_PAGE}"
-        data = fetch_with_retries(url)
+def fetch_batch_for_keyword(keyword, start_page):
+    for page in range(start_page, start_page + BATCH_SIZE):
+        url = f"{BASE_URL}{requests.utils.quote(keyword)}&sp={page}"
+        print(f"Fetching {url}")
+        response = safe_get(url)
+        if "No results found" in response.text:
+            print(f"No more results for '{keyword}' at page {page}. Stopping.")
+            return page - 1  # last page with results
+        parse_and_save_items(response.text, keyword, page)
+        time.sleep(2)  # polite delay between requests
+    return start_page + BATCH_SIZE - 1
 
-        if not data or "results" not in data:
-            print(f"[SKIPPED] No data for page {page} of '{term}'")
-            break
+def main():
+    progress = load_progress()
+    for keyword in KEYWORDS:
+        last_page = progress.get(keyword, 0)
+        print(f"Processing '{keyword}', starting from page {last_page + 1}")
+        new_last_page = fetch_batch_for_keyword(keyword, last_page + 1)
+        progress[keyword] = new_last_page
+        save_progress(progress)
 
-        results = data["results"]
-        if not results:
-            print(f"[DONE] No more results for '{term}' after page {page}")
-            break
-
-        for idx, item in enumerate(results):
-            save_item(item, term, (page - 1) * ITEMS_PER_PAGE + idx)
-
-        total_found += len(results)
-        page += 1
-
-        # LOC rate limiting
-        time.sleep(1)
-
-    print(f"[COMPLETE] {total_found} items collected for '{term}'")
+if __name__ == "__main__":
+    main()
