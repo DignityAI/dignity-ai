@@ -1,70 +1,98 @@
-# fetch_loc_all.py
-
-import requests
+import os
 import json
+import time
+import requests
+from urllib.parse import quote_plus
 from datetime import datetime
 from pathlib import Path
-import hashlib
-import time
 
-KEYWORDS = [
-    "slavery", "enslaved people", "slave", "plantation", "African Americans",
-    "freedmen", "reconstruction", "emancipation", "civil rights", "abolition",
-    "underground railroad", "black history", "negro", "colored people",
-    "jim crow", "segregation"
+# === Keywords for Black History-related LOC search ===
+SEARCH_TERMS = [
+    "slavery", "enslaved people", "slave", "plantation",
+    "African Americans", "freedmen", "reconstruction", "emancipation",
+    "civil rights", "abolition", "underground railroad", "black history",
+    "negro", "colored people", "jim crow", "segregation"
 ]
 
-BASE_URL = "https://www.loc.gov/search/?fo=json&q="
-posts_dir = Path("_posts")
-posts_dir.mkdir(parents=True, exist_ok=True)
+# === Output folder for content ===
+OUTPUT_DIR = Path("data/loc")
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-def sanitize_title(title):
-    return title.strip().replace(":", "-").replace("/", "-").replace(" ", "-")[:50]
+# === Constants for Library of Congress API ===
+BASE_URL = "https://www.loc.gov/search/"
+ITEMS_PER_PAGE = 100  # Max allowed
 
-def save_entry(entry, keyword):
-    title = entry.get("title", "No Title")
-    safe_title = sanitize_title(title)
-    description = entry.get("description", ["No description available."])[0]
-    date_str = datetime.utcnow().strftime("%Y-%m-%d")
-    url = entry.get("url", "")
-    uid = hashlib.md5((title + url).encode()).hexdigest()[:8]
-    filename = f"{date_str}-{safe_title}-{uid}.md"
-    filepath = posts_dir / filename
+# === Robust fetch function with retries and streaming ===
+def fetch_with_retries(url, max_retries=3, backoff_factor=1):
+    session = requests.Session()
+    retries = requests.adapters.Retry(
+        total=max_retries,
+        backoff_factor=backoff_factor,
+        status_forcelist=[500, 502, 503, 504],
+        raise_on_status=False,
+    )
+    adapter = requests.adapters.HTTPAdapter(max_retries=retries)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
 
-    if not filepath.exists():
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write(f"---\n")
-            f.write(f"title: \"{title}\"\n")
-            f.write(f"date: {date_str}\n")
-            f.write(f"source: Library of Congress\n")
-            f.write(f"loc_url: {url}\n")
-            f.write(f"keyword: {keyword}\n")
-            f.write(f"---\n\n")
-            f.write(description)
+    try:
+        response = session.get(url, timeout=20, stream=True)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        print(f"[ERROR] Fetch failed: {e}")
+        return None
 
-def fetch_all_for_keyword(keyword):
+# === Format LOC result to Markdown ===
+def format_markdown(item):
+    title = item.get("title", "Untitled")
+    date = item.get("date", "")
+    url = item.get("url", "")
+    description = item.get("description", "")
+    return f"""---
+title: "{title}"
+date: {date}
+source: "{url}"
+---
+
+**Description:** {description}
+"""
+
+# === Save result to file ===
+def save_item(item, term, index):
+    safe_title = item.get("title", f"{term}-{index}")[:50].replace(" ", "_").replace("/", "-")
+    filename = OUTPUT_DIR / f"{term.replace(' ', '_')}_{index}.md"
+    content = format_markdown(item)
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(content)
+    print(f"[SAVED] {filename}")
+
+# === Main loop for all keywords ===
+for term in SEARCH_TERMS:
+    print(f"\n[SEARCHING] '{term}'")
     page = 1
+    total_found = 0
+
     while True:
-        print(f"Fetching page {page} for keyword: {keyword}")
-        response = requests.get(f"{BASE_URL}{requests.utils.quote(keyword)}&sp={page}")
-        if response.status_code != 200:
-            print(f"Failed on page {page}: {response.status_code}")
+        url = f"{BASE_URL}?q={quote_plus(term)}&fo=json&sp={page}&c={ITEMS_PER_PAGE}"
+        data = fetch_with_retries(url)
+
+        if not data or "results" not in data:
+            print(f"[SKIPPED] No data for page {page} of '{term}'")
             break
 
-        data = response.json()
-        results = data.get("results", [])
+        results = data["results"]
         if not results:
+            print(f"[DONE] No more results for '{term}' after page {page}")
             break
 
-        for entry in results:
-            save_entry(entry, keyword)
+        for idx, item in enumerate(results):
+            save_item(item, term, (page - 1) * ITEMS_PER_PAGE + idx)
 
-        if "next" not in data.get("pagination", {}):
-            break
-
+        total_found += len(results)
         page += 1
-        time.sleep(1)  # prevent hitting API rate limits
 
-# Main execution
-for keyword in KEYWORDS:
-    fetch_all_for_keyword(keyword)
+        # LOC rate limiting
+        time.sleep(1)
+
+    print(f"[COMPLETE] {total_found} items collected for '{term}'")
