@@ -54,4 +54,4 @@ This archive ensures community access to documentation of systematic kidnapping 
 
 ---
 
-*Part of the DignityAI project - transforming individual experiences into collective understanding and community power through systematic analysis.*
+*Powered by Defy Racism Collective, apart of the Dignity project - transforming individual experiences into collective understanding and community power through systematic analysis.*
