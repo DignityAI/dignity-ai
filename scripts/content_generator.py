@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize Claude API
 try:
-    client = Anthropic(api_key=os.environ.get('CLAUDE_API_KEY') or os.environ.get('ANTHROPIC_API_KEY'))
+    client = Anthropic(api_key=os.environ.get('ANTHROPIC_API_KEY') or os.environ.get('ANTHROPIC_API_KEY'))
     logger.info("✅ Anthropic client initialized successfully")
 except Exception as e:
     logger.error(f"❌ Failed to initialize Anthropic client: {e}")
