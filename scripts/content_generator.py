@@ -31,12 +31,6 @@ except Exception as e:
 # RSS Feeds to monitor
 RSS_FEEDS = [
     # Government/Legal Feeds
-    "https://www.govinfo.gov/rss/uscourts-ilnd.xml",
-    "https://www.govinfo.gov/rss/ppp.xml",
-    "https://www.govinfo.gov/rss/dcpd.xml",
-    "https://www.govinfo.gov/rss/bills.xml",
-    "https://www.govinfo.gov/rss/statute.xml",
-    "https://www.govinfo.gov/rss/uscode.xml",
     
     # News Feeds
     "https://billypenn.com/feed",
