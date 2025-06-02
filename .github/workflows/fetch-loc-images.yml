@@ -1,4 +1,4 @@
-name: Fetch LOC Text and Images
+name: RSS FEEDS 
 
 on:
   workflow_dispatch:
@@ -19,7 +19,7 @@ jobs:
         run: pip install requests urllib3
 
       - name: Run LOC fetch combined script
-        run: python scripts/loc_dignity.py
+        run: python scripts/content_generator.py
 
       - name: Commit new content
         run: |
