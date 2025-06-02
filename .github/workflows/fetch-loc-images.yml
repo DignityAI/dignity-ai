@@ -1,4 +1,4 @@
-name: Fetch LOC Content
+name: RSS FEEDS
 
 on:
   schedule:
