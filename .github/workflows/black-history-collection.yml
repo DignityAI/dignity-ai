@@ -25,7 +25,7 @@ jobs:
 
       - name: Run LOC fetch script
         run: |
-          python scripts/fetch_loc.py
+          python scripts/loc_dignity.py
 
       - name: Commit and push new posts
         run: |
