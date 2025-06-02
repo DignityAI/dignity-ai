@@ -1,0 +1,27 @@
+import json
+import os
+
+def convert_to_training_format(input_file, output_file):
+    """Convert your case studies to JSONL training format"""
+    training_data = []
+    
+    # Read your case study files
+    with open(input_file, 'r') as f:
+        content = f.read()
+    
+    # Split into training examples (customize this for your data)
+    sections = content.split('\n\n')
+    
+    for section in sections:
+        if len(section.strip()) > 50:  # Skip short sections
+            training_data.append({"text": section.strip()})
+    
+    # Save as JSONL
+    with open(output_file, 'w') as f:
+        for item in training_data:
+            f.write(json.dumps(item) + '\n')
+    
+    print(f"✅ Converted {len(training_data)} examples to {output_file}")
+
+if __name__ == "__main__":
+    convert_to_training_format("../data/raw/case_studies.md", "../data/processed/training.jsonl")
