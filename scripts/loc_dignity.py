@@ -9,9 +9,9 @@ from urllib3.util.retry import Retry
 
 BASE_URL = "https://www.loc.gov/collections/?q="
 KEYWORDS = [
-    "slavery","enslaved people","slave","plantation","African Americans",
-    "freedmen","reconstruction","emancipation","civil rights","abolition",
-    "underground railroad","black history","negro","colored people","jim crow","segregation"
+    "negro","slavery","enslaved people","slave","plantation",
+    "freedmen","black panther","civil rights","escaped slave",
+    "underground railroad","fred hampton","colored people","jim crow","segregation"
 ]
 
 session = requests.Session()
