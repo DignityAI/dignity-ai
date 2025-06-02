@@ -31,8 +31,11 @@ except Exception as e:
 # RSS Feeds to monitor
 RSS_FEEDS = [
     # Government/Legal Feeds
+    "http://feeds.feedburner.com/abajournal/dailynews"
+    "https://follow.it/scotusblog/rss"
     
     # News Feeds
+    "https://rss.app/feeds/_2ZZUGhJ4rmRCnCOL.xml",
     "https://billypenn.com/feed",
     "https://wtop.com/feed",
     "https://www.kxan.com/feed",
@@ -44,18 +47,6 @@ RSS_FEEDS = [
     "https://www.chicagotribune.com/arcio/rss/",
     "https://www.fox32chicago.com/rss/category/news",
     "https://blockclubchicago.org/feed/",
-    
-    # SDOH-Focused Feeds
-    "https://www.epi.org/feed/",  # Economic Policy Institute
-    "https://feeds.feedburner.com/centeronbudget",  # Center on Budget and Policy Priorities
-    "https://khn.org/feed/",  # Kaiser Health News
-    "https://shelterforce.org/feed/",  # Housing justice
-    "https://www.chalkbeat.org/rss/",  # Education
-    "https://civileats.com/feed/",  # Food justice
-    "https://www.urban.org/rss.xml",  # Urban Institute
-    "https://grist.org/feed/",  # Environmental news
-    "https://www.commonwealthfund.org/feeds/all/rss.xml",  # Health policy
-    "https://hechingerreport.org/feed/",  # Education reporting
 ]
 
 # Keywords to filter relevant articles
