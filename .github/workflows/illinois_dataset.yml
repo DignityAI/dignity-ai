@@ -1,0 +1,42 @@
+# .github/workflows/illinois_dataset.yml
+name: Process Illinois LegiScan Datasets
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'  # Every day at 3AM UTC
+
+jobs:
+  unzip-organize:
+    runs-on: ubuntu-latest
+    name: Unzip and organize Illinois ZIPs
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install tqdm
+
+      - name: Run unzip and organize script
+        run: |
+          python unzip_and_organize.py
+
+      - name: Upload to GCS if large (optional)
+        if: always()
+        run: |
+          du -sh data/json || true
+          # Add real GCS/S3 upload logic here if file size > 100MB
+          echo "Placeholder for cloud upload logic"
+
+# NOTE:
+# - This script assumes unzip_and_organize.py exists at repo root.
+# - Place Illinois ZIP files into `data/zips` directory manually or through another job.
+# - Add environment secrets if you want to push to GCS/S3 securely.
