@@ -1,0 +1,27 @@
+import os
+
+# Federal API Configuration
+USASPENDING_BASE_URL = "https://api.usaspending.gov/api/v2/"
+DOL_BASE_URL = "https://api.dol.gov/"
+
+# Get API key from environment (Railway will set this)
+USASPENDING_API_KEY = os.getenv('USASPENDING_API_KEY')
+
+# Program targeting for Dignity analysis
+YOUTH_EMPLOYMENT_PROGRAMS = {
+    'job_corps': {
+        'cfda_numbers': ['17.273'],
+        'agency_codes': ['69'],
+        'keywords': ['job corps', 'Job Corps']
+    },
+    'americorps': {
+        'cfda_numbers': ['94.006', '94.013'],
+        'agency_codes': ['95'],
+        'keywords': ['americorps', 'AmeriCorps']
+    },
+    'workforce_development': {
+        'cfda_numbers': ['17.259', '17.278'],
+        'agency_codes': ['69'],
+        'keywords': ['workforce development', 'WIOA']
+    }
+}
