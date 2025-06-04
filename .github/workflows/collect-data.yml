@@ -1,0 +1,25 @@
+name: Collect Federal Data
+on:
+  workflow_dispatch: # Manual trigger button
+  
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    - name: Install dependencies
+      run: |
+        pip install requests pandas
+    - name: Collect federal data
+      env:
+        USASPENDING_API_KEY: ${{ secrets.USASPENDING_API_KEY }}
+      run: python scripts/collect_federal_data.py
+    - name: Upload data
+      uses: actions/upload-artifact@v3
+      with:
+        name: federal-data
+        path: data/
