@@ -1,0 +1,9 @@
+---
+title: "Stereograph Cards"
+date: 2025-08-16
+source: "https://www.loc.gov/collections/stereograph-cards/about-this-collection/"
+keyword: "colored people"
+---
+
+The STEREO FOREIGN GEOG series has ca. 22,000 views of places, scenes, structures, and people outside of the United States and spanning the entire globe. Countries particularly well represented include Canada, China, Egypt, England, France, Germany, Greece, India, Ireland, Italy, Japan, Mexico, Norway, Philippines, Russia, and Switzerland. The STEREO US GEOG series has ca. 9,000 views of places, scenes, structures, and people in the United States. Heavily represented states include California, Colorado, New York, and Pennsylvania. The file also has significant documentation for the cities of Boston, Chicago, New York, Philadelphia, and Washington, D.C. The STEREO SUBJ series has 3,500 documentary and topical stereographs, including sentimental and staged scenes.  Categories with many stereographs are African Americans, animals, children, hunting, Indians of North America, industry, ships (including liners and naval vessels), and sports. The STEREO BIOG series has about 500 portraits and other pictures relating to the lives, careers, and families of distinguished or notable persons, including homes and birthplaces. People represented in numerous stereographs include William Jennings Bryan, Admiral George Dewey, Alton Parker, Cecil Rhodes, and Booker T. Washington. The STEREO PRES series has ca. 1,500 portraits and other pictures relating to the lives, careers, and families of U.S. presidents including home and birthplaces. The presidencies of Warren G. Harding, William McKinley, and Theodore Roosevelt are most heavily represented, but stereographs related to Thomas Jefferson through Harry S Truman are available.
+

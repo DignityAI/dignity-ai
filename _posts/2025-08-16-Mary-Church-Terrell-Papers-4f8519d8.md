@@ -1,0 +1,9 @@
+---
+title: "Mary Church Terrell Papers"
+date: 2025-08-16
+source: "https://www.loc.gov/collections/mary-church-terrell-papers/about-this-collection/"
+keyword: "civil rights"
+---
+
+Correspondence, diaries, speeches, writings, clippings, printed matter, and other papers focusing primarily on Terrell's career as an advocate of women's rights and equal treatment for African Americans.  Subjects include women's suffrage; Equal Rights Amendment; education and suffrage for African Americans; desegregation in the District of Columbia; lynching and peonage conditions in the South; progressivism; the campaigns of Presidents Calvin Coolidge, Warren G. Harding, and Herbert Hoover; the Illinois senatorial campaign of Ruth Hanna McCormick Simms; and family affairs.  Documents her work with the Coordinating Committee for the Enforcement of the D.C. Anti-Discrimination Laws, International Purity Conference, National American Woman Suffrage Association, National Association of Colored Women, National Purity Conference, National Woman's Party, War Camp Community Service, Women's International League for Peace and Freedom, and Young Women's Christian Association.  Includes a manuscript of Terrell's autobiography, A Colored Woman in a White World (1940). Correspondents include Jane Addams, Mary McLeod Bethune, Benjamin Griffith Brawley, Nannie Helen Burroughs, Carrie Chapman Catt, Oscar De Priest, W.E.B. DuBois, Christian A. Fleetwood, Francis Jackson Garrison, W.C. Handy, Ida Husted Harper, Addie W. Hunton, Maude White Katz, Eugene Meyer, William L. Patterson, A. Philip Randolph, Jeannette Rankin, Haile Selassie I, Annie Stein, Anson Phelps Stokes, William Monroe Trotter, Oswald Garrison Villard, Booker T. Washington, Margaret James Murray Washington, H.G. Wells, and Carter Godwin Woodson.
+
