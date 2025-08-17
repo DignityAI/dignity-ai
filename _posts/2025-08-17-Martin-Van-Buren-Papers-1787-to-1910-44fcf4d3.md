@@ -1,0 +1,9 @@
+---
+title: "Martin Van Buren Papers, 1787 to 1910"
+date: 2025-08-17
+source: "https://www.loc.gov/collections/martin-van-buren-papers/about-this-collection/"
+keyword: "slavery"
+---
+
+Correspondence, speeches, messages to Congress, writings, notes, legal record book, estate record book, autobiographical material, and other papers pertaining to slavery and the antislavery movement; banking and the Second Bank of the United States; party politics in New York State and at the national level relating to the Democratic, Federalist, National Republican, and Whig parties, particularly during the Andrew Jackson and Martin Van Buren administrations; and the opposition politics of John C. Calhoun, Henry Clay, DeWitt Clinton, William Henry Harrison, Winfield Scott, Zachary Taylor, John Tyler, and Daniel Webster.  Other topics include the Washington Globe, Indian affairs, the annexation of Texas and war with Mexico, Free Soil Movement, tariffs, relations with France and England, and the northeast boundary question.  Also includes material pertaining to Van Buren's home, Lindenwald, in Kinderhook, New York; and correspondence and a travel journal (1838-1839) kept by John Van Buren during a trip to England and Europe. Of particular significance is the correspondence (1828-1845) with Andrew Jackson.  Other correspondents include George Bancroft, Thomas Hart Benton, Francis Preston Blair, James Buchanan, Benjamin F. Butler, Harriet Allen Butler, Churchill Caldom Cambreleng, John A. Dix, John Fairfield, Azariah C. Flagg, Henry D. Gilpin, James Hamilton Jr., Jesse Hoyt, Charles Jared Ingersoll, Amos Kendall, William L. Marcy, Louis McLane, Richard Elliot Parker, James Kirke Paulding, Joel Roberts Poinsett, James K. Polk, Thomas Ritchie, William C. Rives, Andrew Stevenson, Levi Woodbury, and Silas Wright.
+
